@@ -1,0 +1,22 @@
+Package: siscreenr
+Type: Package
+Date: 2019-04-08
+Title: Analysis of siRNA-based High Content Screening
+Author: person('Aleksander', 'Chlebowski', email = 'olobiolo@gmail.com', role = c('aut', 'cre'))
+Maintainer: <olobiolo@gmail.com>
+Version: 0.1.0
+Description: Set of functions I use to analyze high throughput microscopy data.
+    They cover data loading, normalization, scoring, annotation and reporting.
+    Some plotting wrappers are also inclued.
+    The package is adjusted to particular result file formats and my usual work routine. It may not work for everyone.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.5.0)
+Imports: 
+    magrittr,
+    dplyr,
+    tidyr,
+    ggplot2,
+    lubridate
+RoxygenNote: 6.1.1
