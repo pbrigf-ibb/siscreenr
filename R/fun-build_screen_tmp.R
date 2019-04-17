@@ -78,11 +78,16 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col, zero.to.
   # load log and layout and compare logged vs filed plates
   if (verbose) cat('tallying plates... \n')
   screenlog <- read.delim(logfile, stringsAsFactors = FALSE)
+
+  #browser()
+
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
-  data.files <- list.files(path = datadir)
-  data.files.plate.numbers <- strsplit(data.files, split = '_')
-  plates.filed <- sapply(data.files.plate.numbers, function(x) x[[1]][1], USE.NAMES = FALSE)
+  # data.files <- list.files(path = datadir)
+  # data.files.plate.numbers <- strsplit(data.files, split = '_')
+  # plates.filed <- sapply(data.files.plate.numbers, function(x) x[[1]][1], USE.NAMES = TRUE)
+
+  plates.filed <- list.files(path = datadir) %>% sapply(function(x) strsplit(x, split = '_')[[1]][1])
 
   if (length(plates.filed) == 0) stop('no result files')
   if (verbose) {
@@ -121,11 +126,24 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col, zero.to.
   # build screen as data frame
   if (verbose) cat('building screen... \n')
   plates <- intersect(plates.filed, plates.logged)
+  plates <- names(plates.filed[plates.filed %in% plates.logged])
   if (length(plates) == 0) stop('no result files to collate')
-  prescr <- vector(mode = 'list', length = length(plates))
-  for (p in seq_along(plates)) {
-    prescr[[p]] <- read.delim(paste0(datadir, '/', plates[p]), stringsAsFactors = FALSE) %>% dplyr::mutate('filename' = plates[p])
+
+  # sloppily define a function that will load and modify a result file
+  f <- function(x) {
+    filename <- paste0(datadir, '/', x)
+    hm <- read.delim(filename)
+    hm$filename <- x
+    return(hm)
   }
+  # apply the function over the plate list
+  prescr <- lapply(plates, f)
+
+  # previous version
+  # prescr <- vector(mode = 'list', length = length(plates))
+  # for (p in seq_along(plates)) {
+  #   prescr[[p]] <- read.delim(paste0(datadir, '/', plates[p]), stringsAsFactors = FALSE) %>% dplyr::mutate('filename' = plates[p])
+  # }
   if (verbose) cat('collating', length(plates), 'plates', '\n')
   scr <- do.call(rbind, prescr)
 
@@ -152,26 +170,27 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col, zero.to.
   scr <- scr %>%
     dplyr::rename(well = 'Index') %>%
     tidyr::separate('filename', c('plateno','extension'), sep = 21) %>%
-    dplyr::right_join('screenlog', .,  by = 'plateno') %>%
+    dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica')) %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1, remove = FALSE) %>%
-    dplyr::mutate('plate' = gsub('[A-Z]', '', 'plate'), 'plate' = as.numeric('plate'),
-           'replica' = gsub('R', 'rep', 'replica'),
-           'replica' = gsub('C', 'con', 'replica'),
-           'replica' = gsub('P', 'pos', 'replica'),
-           'replica' = gsub('N', 'neg', 'replica'),
-           'replica' = gsub('A', 'act', 'replica')) %>%
-    dplyr::mutate('plate_type' = gsub('R', 'test', 'plate_type'),
-           'plate_type' = gsub('C', 'control', 'plate_type'),
-           'plate_type' = gsub('P', 'positive', 'plate_type'),
-           'plate_type' = gsub('N', 'negative', 'plate_type'),
-           'plate_type' = gsub('A', 'actinonin', 'plate_type')) %>%
+    dplyr::mutate(plate = gsub('[A-Z]', '', plate), plate = as.numeric(plate),
+                  replica = gsub('R', 'rep', replica),
+                  replica = gsub('C', 'con', replica),
+                  replica = gsub('P', 'pos', replica),
+                  replica = gsub('N', 'neg', replica),
+                  replica = gsub('A', 'act', replica)) %>%
+    dplyr::mutate(plate_type = gsub('R', 'test', plate_type),
+                  plate_type = gsub('C', 'control', plate_type),
+                  plate_type = gsub('P', 'positive', plate_type),
+                  plate_type = gsub('N', 'negative', plate_type),
+                  plate_type = gsub('A', 'actinonin', plate_type)) %>%
     dplyr::full_join(lay, .) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension', -'number')
 
   # change zeros to NAs if required
-  if (zero.to.NA) {cat('replacing zeros... \n')
+  if (zero.to.NA) {
+    if (verbose) cat('replacing zeros... \n')
     na.count.before <- sum(is.na(scr))
     zero.count <- sum(scr == 0, na.rm = TRUE)
     scr[scr == 0] <- NA
@@ -190,12 +209,12 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col, zero.to.
     B <- scr$wells_rescanned %>% as.character %>% strsplit(., split = ', ')
     C <- vector('logical', length(A))
     for (i in seq_along(A)) C[i] <- A[i] %in% B[[i]]
-    scr <- scr %>% dplyr::mutate('wells_rescanned' = C) %>% dplyr::rename('rescanned' = 'wells_rescanned')
+    scr <- scr %>% dplyr::mutate(wells_rescanned = C) %>% dplyr::rename(rescanned = wells_rescanned)
   }
 
   # reorder by plate number, replica number and well number
   if (verbose) cat('reordering... \n')
-  scr <- dplyr::arrange(scr, 'plate', 'replica', 'column', 'row')
+  scr <- dplyr::arrange(scr, plate, replica, column, row)
 
   if (verbose) cat('\nready! \n')
   invisible(scr)
