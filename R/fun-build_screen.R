@@ -90,14 +90,10 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   if (verbose) cat('tallying plates... \n')
   screenlog <- read.delim(logfile, stringsAsFactors = FALSE)
 
-  #browser()
-
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
-  # data.files <- list.files(path = datadir)
-  # data.files.plate.numbers <- strsplit(data.files, split = '_')
-  # plates.filed <- sapply(data.files.plate.numbers, function(x) x[[1]][1], USE.NAMES = TRUE)
-
+  data.files <- list.files(path = datadir)
+  # plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1], USE.NAMES = TRUE)
   plates.filed <- list.files(path = datadir) %>% sapply(function(x) strsplit(x, split = '_')[[1]][1])
 
   if (length(plates.filed) == 0) stop('no result files')
@@ -139,12 +135,6 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   plates <- intersect(plates.filed, plates.logged)
   plates <- names(plates.filed[plates.filed %in% plates.logged])
   if (length(plates) == 0) stop('no result files to collate')
-<<<<<<< HEAD:R/fun-build_screen.R
-  prescr <- vector(mode = 'list', length = length(plates))
-  for (p in seq_along(plates)) {
-    prescr[[p]] <- read.delim(paste0(datadir, '/', plates[p]), stringsAsFactors = FALSE) %>%
-      dplyr::mutate(filename = plates[p])
-=======
 
   # sloppily define a function that will load and modify a result file
   f <- function(x) {
@@ -152,7 +142,6 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     hm <- read.delim(filename)
     hm$filename <- x
     return(hm)
->>>>>>> a5a0694f2c478bba2823daa0483f95a27ef7901e:R/fun-build_screen_tmp.R
   }
   # apply the function over the plate list
   prescr <- lapply(plates, f)
@@ -190,20 +179,6 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica')) %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1, remove = FALSE) %>%
-<<<<<<< HEAD:R/fun-build_screen.R
-    dplyr::mutate(plate = gsub('[A-Z]', '', 'plate'), 'plate' = as.numeric('plate'),
-           replica = gsub('R', 'rep', 'replica'),
-           replica = gsub('C', 'con', 'replica'),
-           replica = gsub('P', 'pos', 'replica'),
-           replica = gsub('N', 'neg', 'replica'),
-           replica = gsub('A', 'act', 'replica')) %>%
-    dplyr::mutate(
-      plate_type = gsub('R', 'test', 'plate_type'),
-      plate_type = gsub('C', 'control', 'plate_type'),
-      plate_type = gsub('P', 'positive', 'plate_type'),
-      plate_type = gsub('N', 'negative', 'plate_type'),
-      plate_type = gsub('A', 'actinonin', 'plate_type')) %>%
-=======
     dplyr::mutate(plate = gsub('[A-Z]', '', plate), plate = as.numeric(plate),
                   replica = gsub('R', 'rep', replica),
                   replica = gsub('C', 'con', replica),
@@ -215,7 +190,6 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
                   plate_type = gsub('P', 'positive', plate_type),
                   plate_type = gsub('N', 'negative', plate_type),
                   plate_type = gsub('A', 'actinonin', plate_type)) %>%
->>>>>>> a5a0694f2c478bba2823daa0483f95a27ef7901e:R/fun-build_screen_tmp.R
     dplyr::full_join(lay, .) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension', -'number')
@@ -237,29 +211,16 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   # if rescanned wells are recorded, convert lists of rescanned wells to logical vector
   # TODO: allow for different column names
   if ('wells_rescanned' %in% names(scr)) {
-<<<<<<< HEAD:R/fun-build_screen.R
     if (verbose) cat('reading rescanned well flag \n')
     A <- scr$position ### poprawka czy ma zera
     B <- scr$wells_rescanned %>% strsplit(., split = ', ')
     C <- mapply(is.element, A, B)
     scr <- scr %>% dplyr::mutate(rescanned = C) %>% dplyr::select(-'wells_rescanned')
-=======
-    if (verbose) cat('processing data on rescanned wells \n')
-    A <- scr$position %>% as.character
-    B <- scr$wells_rescanned %>% as.character %>% strsplit(., split = ', ')
-    C <- vector('logical', length(A))
-    for (i in seq_along(A)) C[i] <- A[i] %in% B[[i]]
-    scr <- scr %>% dplyr::mutate(wells_rescanned = C) %>% dplyr::rename(rescanned = wells_rescanned)
->>>>>>> a5a0694f2c478bba2823daa0483f95a27ef7901e:R/fun-build_screen_tmp.R
   }
 
   # reorder by plate number, replica number and well number
   if (verbose) cat('reordering... \n')
-<<<<<<< HEAD:R/fun-build_screen.R
-  scr <- dplyr::arrange(scr, 'plate', 'replica', 'prepared', 'plated', 'imaged', 'column', 'row')
-=======
   scr <- dplyr::arrange(scr, plate, replica, column, row)
->>>>>>> a5a0694f2c478bba2823daa0483f95a27ef7901e:R/fun-build_screen_tmp.R
 
   if (verbose) cat('\nready! \n')
   invisible(scr)

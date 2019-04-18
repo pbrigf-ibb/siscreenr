@@ -14,8 +14,8 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.5.0)
 Imports: 
-    magrittr,
-    dplyr (>=0.7.8),
+    magrittr (>= 1.5),
+    dplyr (>= 0.7.8),
     tidyr (>= 0.8.2),
     ggplot2 (>= 3.1.0),
     lubridate (>= 1.7.4),

@@ -4,23 +4,24 @@
 \alias{separate_flag}
 \title{separate plate flags into well flags}
 \usage{
-separate_flag(scr, well.ID = "position", flag = "wells_rescanned",
-  newname, sep = ", ")
+separate_flag(scr, flag = "wells_rescanned", newname, sep = ", ",
+  well.ID = "position")
 }
 \arguments{
 \item{scr}{a screen object, i.e. a \code{data frame}}
 
 \item{flag}{name of column to transform, given as character}
 
-\item{newname}{new name for new flag column, given as string; optional}
+\item{newname}{new name for the \code{flag} column, given as string; optional}
 
-\item{sep}{splitting terms for \code{flag} strings, passed to strsplit}
+\item{sep}{splitting terms for \code{flag} strings, passed to \code{strsplit}}
 
-\item{wellID}{name of column with well identifier, given as character;
+\item{well.ID}{name of column with well identifier, given as character;
 see \code{Well identifiers}}
 }
 \value{
-a \code{data frame} where the flag column was replaced and optionally renamed
+a \code{data frame} where the flag variable was converted from
+        string to logical and optionally renamed
 }
 \description{
 If a column in a screen object contains a string with a list of wells
@@ -38,7 +39,7 @@ the log file, they will be contained in a single string, e.g. "A1, H17".
 
 In order to improve legibility of the screen report these comments, rather than
 be repeated as is for all wells, will be converted into a logical flag,
-where the noted wells will get a \code{TRUE} value and the others - a \code{FALSE}.
+where the noted wells will get a \code{TRUE} value and the others will get a \code{FALSE}.
 }
 \section{Well identifiers}{
 
@@ -51,6 +52,9 @@ to disregard it as it may cause problems if the export file is defined by groups
 rather than wells.
 Well coordinates can be introduced by the layout file, typically in a single
 column called "position" or in two columns called "row" and "column", or both.
+}
+
+\section{Caution}{
 
 It is crucial that notes in a flagging column are kept consistent,
 i.e. use either the well number or position. Also, when using position, pay attention

@@ -14,7 +14,7 @@
 #'
 #' In order to improve legibility of the screen report these comments, rather than
 #' be repeated as is for all wells, will be converted into a logical flag,
-#' where the noted wells will get a \code{TRUE} value and the others - a \code{FALSE}.
+#' where the noted wells will get a \code{TRUE} value and the others will get a \code{FALSE}.
 #'
 #' @section Well identifiers:
 #' A well can be identified in two ways: by a number from 1 through the number of wells in a plate
@@ -27,6 +27,7 @@
 #' Well coordinates can be introduced by the layout file, typically in a single
 #' column called "position" or in two columns called "row" and "column", or both.
 #'
+#' @section Caution:
 #' It is crucial that notes in a flagging column are kept consistent,
 #' i.e. use either the well number or position. Also, when using position, pay attention
 #' to whether you use a strict 3-character format or a loose one, that is whether you
@@ -35,28 +36,35 @@
 #' @seealso \code{\link{insert_zeros}}
 #'
 #' @param scr a screen object, i.e. a \code{data frame}
-#' @param wellID name of column with well identifier, given as character;
+#' @param well.ID name of column with well identifier, given as character;
 #'               see \code{Well identifiers}
 #' @param flag name of column to transform, given as character
 #' @param newname new name for the \code{flag} column, given as string; optional
-#' @param sep splitting terms for \code{flag} strings, passed to strsplit
+#' @param sep splitting terms for \code{flag} strings, passed to \code{strsplit}
 #'
 #' @return a \code{data frame} where the flag variable was converted from
 #'         string to logical and optionally renamed
 #'
+#' @importFrom magrittr %>%
+#'
 
-separate_flag <- function(scr, well.ID = 'position', flag = 'wells_rescanned',
-                          newname, sep = ', ') {
+separate_flag <- function(scr, flag = 'wells_rescanned', newname,
+                          sep = ', ', well.ID = 'position') {
   #check arguments
   if (!well.ID %in% colnames(scr)) stop('invalid column name in "well.ID"')
   if (!flag %in% colnames(scr)) stop('invalid column name in "flag"')
-
+  # isolate well.ID
   A <- scr[[well.ID]]
+  # isolate flag and split the string
   B <- scr[[flag]] %>% strsplit(., split = sep)
+  # compare the two
   C <- mapply(is.element, A, B)
+  # replace original column in scr
   scr[[flag]] <- C
+  # change column name if required
   if (!missing(newnwame)) {
     ind <- which(colnames(scr) == flag)
     colnames(scr)[ind] <- newname
   }
+  return(scr)
 }
