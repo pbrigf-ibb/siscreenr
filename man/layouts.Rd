@@ -7,7 +7,7 @@
 layouts(..., file)
 }
 \arguments{
-\item{...}{files to load and collate, given either as one or more character vectors}
+\item{...}{files to load and collate, given as one or more character vectors}
 
 \item{file}{file to save the layout in}
 }
@@ -23,7 +23,8 @@ layouts for different plating dates and these may be different.
 This is a utility function for neatly putting together many layouts.
 Sometimes a layout changes over the course of the screen. In that case it is easy (if a little tedious)
 to prepare a composite layout file with a separate column for every plating date.
-This function will load all such files and convert them into a single file that can be loaded with \code{\link{build_screen}}.
+This function will load all such files and convert them into a single file
+that can be loaded with \code{\link{build_screen}}.
 If your screen maintains the same layout throughout, runninng this function is redundant.
 
 The output file is a tab delimited text file that contains a narrow format table with the columns:
@@ -41,7 +42,19 @@ Input files \strong{must} follow these rules:
 4. if there is a single layout, it must be in a column called "well_type"
 
 5. if there is more than one layout, each must be placed in a separate column,
-the name of which must by the plating date in yyyymmdd format, numeric or character
+the name of which must by the plating date in yyyymmdd format (legal separators are allowed)
 
 There should also have a "position" column or "row" and "column" columns but this is optional.
+}
+\examples{
+L <- layouts('layout_S14_test.txt',
+             'layout_S14_control.txt')
+head(L)
+table(L$plated, L$well_type, L$plate_type)
+
+layouts('layout_S14_test.txt',
+        'layout_S14_control.txt',
+        file = 'temp_layout_S14.txt')
+head(read.delim('temp_layout_S14.txt'))
+
 }

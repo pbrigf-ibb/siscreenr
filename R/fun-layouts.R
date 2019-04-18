@@ -7,7 +7,8 @@
 #' This is a utility function for neatly putting together many layouts.
 #' Sometimes a layout changes over the course of the screen. In that case it is easy (if a little tedious)
 #' to prepare a composite layout file with a separate column for every plating date.
-#' This function will load all such files and convert them into a single file that can be loaded with \code{\link{build_screen}}.
+#' This function will load all such files and convert them into a single file
+#' that can be loaded with \code{\link{build_screen}}.
 #' If your screen maintains the same layout throughout, runninng this function is redundant.
 #'
 #' The output file is a tab delimited text file that contains a narrow format table with the columns:
@@ -25,11 +26,11 @@
 #' 4. if there is a single layout, it must be in a column called "well_type"
 #'
 #' 5. if there is more than one layout, each must be placed in a separate column,
-#' the name of which must by the plating date in yyyymmdd format, numeric or character
+#' the name of which must by the plating date in yyyymmdd format (legal separators are allowed)
 #'
 #' There should also have a "position" column or "row" and "column" columns but this is optional.
 #'
-#' @param ... files to load and collate, given either as one or more character vectors
+#' @param ... files to load and collate, given as one or more character vectors
 #' @param file file to save the layout in
 #'
 #' @return The collated layout table is returned but only if \code{file} is missing.
@@ -37,6 +38,19 @@
 #' @importFrom magrittr %>%
 #' @importFrom utils read.delim
 #' @importFrom utils write.table
+#'
+#' @examples
+#' L <- layouts('layout_S14_test.txt',
+#'              'layout_S14_control.txt')
+#' head(L)
+#' table(L$plated, L$well_type, L$plate_type)
+#'
+#' layouts('layout_S14_test.txt',
+#'         'layout_S14_control.txt',
+#'         file = 'temp_layout_S14.txt')
+#' head(read.delim('temp_layout_S14.txt'))
+#'
+
 
 layouts <- function(..., file) {
   # change global option and clean up afterwards
@@ -57,7 +71,9 @@ layouts <- function(..., file) {
       X_name_split <- unlist(strsplit(x, '_|\\.'))
       X$plate_type <- X_name_split[length(X_name_split) - 1]
     }
-    X %>% tidyr::gather('plated', 'well_type', dplyr::matches('[0-9]{8}')) %>% dplyr::mutate('plated' = gsub('^X', '', 'plated'))
+    X %>%
+      tidyr::gather('plated', 'well_type', dplyr::matches('[0-9]{8}')) %>%
+      dplyr::mutate('plated' = gsub('^X', '', 'plated'))
   }
 
   # apply the function over all requested files
@@ -65,11 +81,3 @@ layouts <- function(..., file) {
 
   if (missing(file)) return(L) else write.table(L, file, quote = F, sep = '\t', row.names = F)
 }
-
-#' @examples
-#' L <- layouts('layout_S14_test.txt', 'layout_S14_control.txt')
-#' head(L)
-#' table(L$plated, L$well_type, L$plate_type)
-#'
-#' layouts('layout_S14_test.txt', 'layout_S14_control.txt', file = 'layout_S14.txt')
-#'
