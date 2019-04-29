@@ -12,7 +12,7 @@ hitscore(x, treshold = 2)
 \item{treshold}{absolute treshold for hit status}
 }
 \value{
-a vector of hit statuses represented as integers: -1, 0 or 1
+a vector of hit statuses represented as integers: 1, -1 or 0
 }
 \description{
 Assign hit status to single wells in a screen based on their z scores.
