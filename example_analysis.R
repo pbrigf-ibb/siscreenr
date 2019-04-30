@@ -1,5 +1,17 @@
+library(siscreenr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+
+# go to screen directory
+setwd('C:/Users/Olo/Desktop/R/ground/')
+
+plot_screen_progress(file = NULL)
+layouts('layout_S01_test.txt', 'layout_S01_control.txt', file = 'layout_S01.txt')
 
 s <-
-  build_screen() %>%
-  clean_column_names() %>%
-  separate_flag('wells_rescanned', newname = 'rescanned')
+  build_screen('screenlog_S01.txt', 'layout_S01.txt', rem.col = c(0,2)) %>% dplyr::glimpse() %>%
+  clean_column_names() %>% dplyr::glimpse() %>%
+  separate_flag('wells_rescanned', newname = 'rescanned') %>%  dplyr::glimpse()
+

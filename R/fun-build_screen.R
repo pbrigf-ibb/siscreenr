@@ -67,17 +67,12 @@
 #' this may cause problems if not all wells are scanned.
 #' Also we load layout and annotation separately, the column is redundant anyway.
 #'
-#' @importFrom magrittr %>%
 #' @importFrom utils read.delim
-#'
-#' @export
 #'
 
 build_screen <- function(logfile, layout, datadir = './data/', rem.col,
                          zero.to.NA = FALSE, verbose = TRUE) {
   # check arguments
-  if (missing(logfile)) stop('logfile not specified')
-  if (missing(layout)) stop('layout not specified')
   if (!file.exists(logfile)) stop('logfile not found')
   if (!file.exists(layout)) stop('layout file not found')
   if (!dir.exists(datadir)) stop('data directory not found')
@@ -206,16 +201,6 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
       cat(' ', zero.count, 'zeros found and replaced in total \n')
       cat(' ', na.count.after, 'NAs now present \n')
     }
-  }
-
-  # if rescanned wells are recorded, convert lists of rescanned wells to logical vector
-  # TODO: allow for different column names
-  if ('wells_rescanned' %in% names(scr)) {
-    if (verbose) cat('reading rescanned well flag \n')
-    A <- scr$position ### poprawka czy ma zera
-    B <- scr$wells_rescanned %>% strsplit(., split = ', ')
-    C <- mapply(is.element, A, B)
-    scr <- scr %>% dplyr::mutate(rescanned = C) %>% dplyr::select(-'wells_rescanned')
   }
 
   # reorder by plate number, replica number and well number

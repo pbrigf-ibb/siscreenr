@@ -21,14 +21,14 @@ Assign hit status to single wells in a screen based on their z scores.
 A data point is considered a hit if its hitting variable (usually a z score)
 exceeds a treshold. A point can have one of three hitscores:
 \itemize{
-\item{
-1 (positive hit) if its value is equal to or higher than the treshold
-}
-\item{
--1 (negative hit) if its value is equal or lowerto  than the negative treshold
-}
-\item{
-0 (non-hit) if its absolute value is lower than the treshold
-}
+  \item{
+  1 (positive hit) if its value is equal to or higher than the treshold
+  }
+  \item{
+  -1 (negative hit) if its value is equal or lowerto  than the negative treshold
+  }
+  \item{
+  0 (non-hit) if its absolute value is lower than the treshold
+  }
 }
 }

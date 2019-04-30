@@ -1,15 +1,25 @@
 Package: siscreenr
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Analyze Genome-Wide siRNA Screening Campaigns
+Version: 2.0.0.9000
 Authors@R: 
     person(given = "Aleksander",
            family = "Chlebowski",
            role = c("aut", "cre"),
            email = "olobiolo@gmail.com")
 Maintainer: <olobiolo@gmail.com>
-Description: What the package does (one paragraph).
-License: What license it uses
+Description: Data analysis tools for screening campaigns with a microscopic readout.
+    Created to work with a genome-wide siRNA library and a ScanR imaging system, 
+    hence some idiosyncracies. Hopefully will be applicable to other setups as well.
+License: GPL-3
 Depends: 
     R (>= 3.5.3)
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    magrittr (>= 1.5),
+    dplyr (>= 0.7.8),
+    tidyr (>= 0.8.2),
+    ggplot2 (>= 3.1.0),
+    data.table (>= 1.12.2),
+    lubridate (>= 1.7.4)
+RoxygenNote: 6.1.1

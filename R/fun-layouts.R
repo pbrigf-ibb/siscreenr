@@ -33,7 +33,7 @@
 #' @param ... files to load and collate, given as one or more character vectors
 #' @param file file to save the layout in
 #'
-#' @return The collated layout table is returned but only if \code{file} is missing.
+#' @return if \code{file} is missing, the collated layout table, otherwise nothing
 #'
 #' @importFrom magrittr %>%
 #' @importFrom utils read.delim
@@ -73,7 +73,7 @@ layouts <- function(..., file) {
     }
     X %>%
       tidyr::gather('plated', 'well_type', dplyr::matches('[0-9]{8}')) %>%
-      dplyr::mutate('plated' = gsub('^X', '', 'plated'))
+      dplyr::mutate('plated' = gsub('^X', '', plated))
   }
 
   # apply the function over all requested files
