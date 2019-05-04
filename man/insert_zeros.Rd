@@ -2,12 +2,24 @@
 % Please edit documentation in R/fun-insert_zeros.R
 \name{insert_zeros}
 \alias{insert_zeros}
+\alias{insert_zeros.character}
+\alias{insert_zeros.factor}
+\alias{insert_zeros.numeric}
+\alias{insert_zeros.default}
 \title{insert zeros into a character vector}
 \usage{
-insert_zeros(X, zeros = "auto", after = 1)
+insert_zeros(x, zeros = "auto", after = 1)
+
+\method{insert_zeros}{character}(x, zeros = "auto", after = 1)
+
+\method{insert_zeros}{factor}(x, zeros = "auto", after = 1)
+
+\method{insert_zeros}{numeric}(x, zeros = "auto", after = 1)
+
+\method{insert_zeros}{default}(x)
 }
 \arguments{
-\item{X}{character vector}
+\item{x}{character vector}
 
 \item{zeros}{number of \code{0} characters to insert; see \code{Details}}
 
@@ -28,12 +40,14 @@ if \code{X} is of length 1, adds 1 \code{0};
 if \code{X} is longer than 1, adds to each element a number of \code{0}
 so that all elements of \code{X} have an equal number of characters.
 }
-\examples{
-insert_zeros("A1")
+\section{Methods (by class)}{
+\itemize{
+\item \code{character}: the basic method
 
-v <- paste0(LETTERS[1:10], 1:10)
-rbind("original" = v,
-      "auto" = insert_zeros(v),
-      "force 1 zero" = insert_zeros(v, 1),
-      "force after 2nd char" = insert_zeros(v, after = 2))
-}
+\item \code{factor}: runs on levels of x rather than its body
+
+\item \code{numeric}: coerces to character and passes to character method
+
+\item \code{default}: throws error for non-supperted classes
+}}
+

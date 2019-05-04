@@ -23,16 +23,12 @@
 #' There is quite a lot of printed communication the function does, hence the \code{verbose} argument.
 #'
 #' @param logfile path to screen log file; see \code{Log file}
-#'
 #' @param layout path to layout file that describes well types; see \code{Layout file}
-#'
 #' @param datadir path to directory where data files are stored
-#'
 #' @param rem.col columns to remove, given either as character vector or as vector of numeric indices;
-#'              0 is interpreted as the last column;
-#'
+#'                input 0 to remove last column;
 #' @param zero.to.NA logical flag whether to convert all 0 values to NAs
-#'
+#' @param wells name of column that stores well numbers; will be renamed to "wells"
 #' @param verbose logical flag whether to print all communications
 #'
 #' @return an invisible \code{data.frame}
@@ -71,7 +67,7 @@
 #'
 
 build_screen <- function(logfile, layout, datadir = './data/', rem.col,
-                         zero.to.NA = FALSE, verbose = TRUE) {
+                         zero.to.NA = FALSE, wells = 'Index', verbose = TRUE) {
   # check arguments
   if (!file.exists(logfile)) stop('logfile not found')
   if (!file.exists(layout)) stop('layout file not found')
@@ -88,13 +84,12 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
   data.files <- list.files(path = datadir)
-  # plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1], USE.NAMES = TRUE)
-  plates.filed <- list.files(path = datadir) %>% sapply(function(x) strsplit(x, split = '_')[[1]][1])
+  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1])
 
   if (length(plates.filed) == 0) stop('no result files')
   if (verbose) {
     cat(length(plates.filed), 'result files found: \n')
-    print(cbind(sort(plates.filed)))
+    print(cbind(sort(as.vector(plates.filed))))
   }
 
   # check for missing/excess result files
@@ -118,7 +113,8 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     if (!is.element('position', lay.colnames)) {
       warning('it seems well position (row and column) is not defined in the layout file\nthis may cause problems down the line')
     } else {
-      lay <- tidyr::separate(lay, col = 'position', sep = 1, into = c('row', 'column'), remove = F, convert = T)
+      lay <- tidyr::separate(lay, col = 'position', sep = 1, into = c('row', 'column'),
+                             remove = F, convert = T)
     }
   }
   if (is.element('date', lay.colnames) & !is.element('plated', lay.colnames)) {
@@ -127,25 +123,19 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # build screen as data frame
   if (verbose) cat('building screen... \n')
-  plates <- intersect(plates.filed, plates.logged)
   plates <- names(plates.filed[plates.filed %in% plates.logged])
   if (length(plates) == 0) stop('no result files to collate')
 
-  # sloppily define a function that will load and modify a result file
-  f <- function(x) {
+  # define a function that will load and modify a result file
+  plate.loader <- function(x) {
     filename <- paste0(datadir, '/', x)
-    hm <- read.delim(filename)
-    hm$filename <- x
-    return(hm)
+    plate.loaded <- read.delim(filename)
+    plate.loaded$filename <- x
+    return(plate.loaded)
   }
   # apply the function over the plate list
-  prescr <- lapply(plates, f)
+  prescr <- lapply(plates, plate.loader)
 
-  # previous version
-  # prescr <- vector(mode = 'list', length = length(plates))
-  # for (p in seq_along(plates)) {
-  #   prescr[[p]] <- read.delim(paste0(datadir, '/', plates[p]), stringsAsFactors = FALSE) %>% dplyr::mutate('filename' = plates[p])
-  # }
   if (verbose) cat('collating', length(plates), 'plates', '\n')
   scr <- do.call(rbind, prescr)
 
@@ -161,7 +151,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
       }
       rem <- intersect(rem.col, colnames(scr))
     } else {
-      if (0 %in% rem.col) rem.col[rem.col == 0] <- length(cols)
+      if (0 %in% rem.col) rem.col[rem.col == 0] <- length(cols) - 1
       rem <- cols[rem.col]
     }
     scr <- dplyr::select(scr, -rem)
@@ -169,7 +159,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # read and reformat additional information
   scr <- scr %>%
-    dplyr::rename(well = 'Index') %>% # TODO not universal!!!
+    dplyr::rename(well = wells) %>%
     tidyr::separate('filename', c('plateno','extension'), sep = 21) %>%
     dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica')) %>%
@@ -188,6 +178,19 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     dplyr::full_join(lay, .) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension', -'number')
+
+  # scr <- scr %>%
+  #   dplyr::rename(well = wells) %>%
+  #   tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
+  #   dplyr::right_join(screenlog, .,  by = 'plateno') %>%
+  #   tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
+  #   tidyr::separate('replica', c('plate_type', 'number'), sep = 1) %>%
+  #   dplyr::mutate(plate = gsub('[A-Z]', '', plate), plate = as.numeric(plate)) %>%
+  #   plate.type.converter() %>%
+  #   tidyr::unite(replica, replica, number, sep = '') %>%
+  #   dplyr::full_join(lay, .) %>%
+  #   dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
+  #   dplyr::select(-'extension')
 
   # change zeros to NAs if required
   if (zero.to.NA) {

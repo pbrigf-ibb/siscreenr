@@ -7,4 +7,6 @@ plate.type.converter.key <- rbind(plate.type.converter.key, c('N', 'negative', '
 plate.type.converter.key <- rbind(plate.type.converter.key, c('A', 'actinonin', 'act'))
 #plate.type.converter.key <- rbind(plate.type.converter.key, c('', '', '')
 
+plate.type.converter.key <- as.data.frame(plate.type.converter.key, stringsAsFactors = FALSE)
+
 #usethis::use_data(plate.type.converter.key, internal = TRUE)

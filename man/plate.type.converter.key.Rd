@@ -4,22 +4,20 @@
 \name{plate.type.converter.key}
 \alias{plate.type.converter.key}
 \title{detect and reformat plate type and replica designation}
-\format{An object of class \code{matrix} with 6 rows and 3 columns.}
+\format{An object of class \code{data.frame} with 6 rows and 3 columns.}
 \usage{
 plate.type.converter.key
 }
 \arguments{
 \item{x}{a screen object}
 
-\item{key}{an external dictionary, defaults to plate.type.converter.key}
+\item{key}{an external dictionary, defaults to plate.type.converter.key,
+a character matrix that should be attached with the package}
 }
 \value{
-character vector changed according to an external dictionary
+screen object in which columns "plate_type" and "replica" are altered
 }
 \description{
 This is in internal function called by \code{build_screen}.
-}
-\details{
-This work is in progress but nears completion. Benchmarked but not tested.
 }
 \keyword{datasets}

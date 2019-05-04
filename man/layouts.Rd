@@ -12,7 +12,7 @@ layouts(..., file)
 \item{file}{file to save the layout in}
 }
 \value{
-The collated layout table is returned but only if \code{file} is missing.
+if \code{file} is missing, the collated layout table, otherwise nothing
 }
 \description{
 Take any number of layout files and create a single layout file.

@@ -5,7 +5,7 @@
 \title{build screen object}
 \usage{
 build_screen(logfile, layout, datadir = "./data/", rem.col,
-  zero.to.NA = FALSE, verbose = TRUE)
+  zero.to.NA = FALSE, wells = "Index", verbose = TRUE)
 }
 \arguments{
 \item{logfile}{path to screen log file; see \code{Log file}}
@@ -15,9 +15,11 @@ build_screen(logfile, layout, datadir = "./data/", rem.col,
 \item{datadir}{path to directory where data files are stored}
 
 \item{rem.col}{columns to remove, given either as character vector or as vector of numeric indices;
-0 is interpreted as the last column;}
+input 0 to remove last column;}
 
 \item{zero.to.NA}{logical flag whether to convert all 0 values to NAs}
+
+\item{wells}{name of column that stores well numbers; will be renamed to "wells"}
 
 \item{verbose}{logical flag whether to print all communications}
 }

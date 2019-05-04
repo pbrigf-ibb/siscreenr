@@ -2,12 +2,11 @@
 #'
 #' This is in internal function called by \code{build_screen}.
 #'
-#' This work is in progress but nears completion. Benchmarked but not tested.
-#'
 #' @param x a screen object
-#' @param key an external dictionary, defaults to plate.type.converter.key
+#' @param key an external dictionary, defaults to plate.type.converter.key,
+#'            a character matrix that should be attached with the package
 #'
-#' @return character vector changed according to an external dictionary
+#' @return screen object in which columns "plate_type" and "replica" are altered
 #'
 #' @importFrom magrittr %>%
 #'
@@ -22,15 +21,16 @@ plate.type.converter.key <- rbind(plate.type.converter.key, c('C', 'control', 'c
 plate.type.converter.key <- rbind(plate.type.converter.key, c('P', 'positive', 'pos'))
 plate.type.converter.key <- rbind(plate.type.converter.key, c('N', 'negative', 'neg'))
 plate.type.converter.key <- rbind(plate.type.converter.key, c('A', 'actinonin', 'act'))
+plate.type.converter.key <- as.data.frame(plate.type.converter.key, stringsAsFactors = FALSE)
 
 plate.type.converter <- function(x, key = plate.type.converter.key) {
-  dots.type <- key[, c('code', 'plate_type')] %>% apply(1, paste, collapse = ' = ')
-  dots.replica <- key[, c('code', 'replica')] %>% apply(1, paste, collapse = ' = ')
-  f_plate_type <- function(x) switch(x, dots.type)
-  f_replica <- function(x) switch(x, dots.replica)
+  dots.replica <- c(setNames(as.list(key$replica), key$code), 'unknown')
+  dots.type <- c(setNames(as.list(key$plate_type), key$code), 'unknown')
+  f_replica <- function(x) do.call(switch, c(x, dots.replica))
+  f_plate_type <- function(x) do.call(switch, c(x, dots.type))
 
+  x$replica <- vapply(x$plate_type, f_replica, character(1))
   x$plate_type <- vapply(x$plate_type, f_plate_type, character(1))
-  x$replica <- vapply(x$replica, f_replica, character(1))
 
   return(x)
 }
@@ -38,14 +38,15 @@ plate.type.converter <- function(x, key = plate.type.converter.key) {
 
 # benchmarking
 # a <- rep(c('R', 'C'), 10)
-# f_sub <- function() {
-#   a <- gsub('R', 'rep', a)
-#   a <- gsub('C', 'con', a)
-#   a <- gsub('P', 'pos', a)
-#   a <- gsub('N', 'neg', a)
-#   a <- gsub('A', 'sct', a)
+# f_sub <- function(x) {
+#   x <- gsub('R', 'rep', x)
+#   x <- gsub('C', 'con', x)
+#   x <- gsub('P', 'pos', x)
+#   x <- gsub('N', 'neg', x)
+#   x <- gsub('A', 'act', x)
+#   return(x)
 # }
-# f_swi <- function() {
+# f_swi <- function(x) {
 #   f <- function(x) {
 #     switch(x,
 #            'R' = 'rep',
@@ -54,6 +55,8 @@ plate.type.converter <- function(x, key = plate.type.converter.key) {
 #            'N' = 'neg',
 #            'A' = 'act')
 #   }
-#   vapply(a, f, character(1))
+#   vapply(x, f, character(1), USE.NAMES = FALSE)
 # }
-# microbenchmark::microbenchmark(f_sub(), f_swi())
+# microbenchmark::microbenchmark(f_sub(a), f_swi(a))
+
+

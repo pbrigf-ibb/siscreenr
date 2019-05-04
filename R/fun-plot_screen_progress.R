@@ -58,13 +58,14 @@ plot_screen_progress <- function(directory, file) {
   SS <- days %>% dplyr::full_join(., Sp) %>% dplyr::full_join(., Si) %>%
     tidyr::fill(dplyr::matches('\\.$')) %>%
     dplyr::select(day, plated = plated., imaged = imaged.) %>%
-    tidyr::gather(plates, `number of plates`, plated, imaged)
+    tidyr::gather(plates, number_of_plates, plated, imaged)
   #
   P <- SS %>%
-    ggplot2::ggplot(ggplot2::aes(x = day, y = `number of plates`, fill = plates)) +
+    ggplot2::ggplot(ggplot2::aes(x = day, y = number_of_plates, fill = plates)) +
     ggplot2::geom_bar(stat = 'identity', position = ggplot2::position_identity(), width = 1) +
     ggplot2::scale_fill_manual(values = c('limegreen', 'cornflowerblue')) +
-    ggplot2::ggtitle('material accumulation over the course of the screen')
+    ggplot2::ggtitle('material accumulation over the course of the screen') +
+    ggplot2::ylab('number of plates')
 
   if (!missing(file) && is.null(file)) {
     print(P)
