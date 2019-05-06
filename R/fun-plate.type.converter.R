@@ -1,29 +1,40 @@
-#' detect and reformat plate type and replica designation
+#' reformat plate type and replica designation
 #'
-#' This is in internal function called by \code{build_screen}.
+#' This is an internal function called by \code{build_screen}.
+#' It checks the plate type encoded in field 4 of the plate name and changes the columns
+#' \code{plate_type} and \code{replica}, according to a dictionary.
+#'
+#' The dictionary is supplied as a data frame, by default one found in a file
+#' in the package's data directory. The file contains five options as of May 2019
+#' and more options can easily be added by the user.
+#'
+#' Alternatively, the dictionary can be taken from a custom file or an object specified by
+#' the \code{key} argument. Be careful to keep to the format of the default file.
+#'
+#' To view or edit the dictionary file find it with \code{path.package('siscreenr')}.
 #'
 #' @param x a screen object
-#' @param key an external dictionary, defaults to plate.type.converter.key,
-#'            a character matrix that should be attached with the package
+#' @param key optional dictinoary file or object, see \code{Details}
 #'
 #' @return screen object in which columns "plate_type" and "replica" are altered
 #'
 #' @importFrom magrittr %>%
 #'
+#' @examples
+#' d <- data.frame(plate_type = rep(c('R', 'C'), each = 3))
+#' plate.type.converter(d)
 
+plate.type.converter <- function(x, key) {
+  if (missing(key)) key <- paste0(path.package('siscreenr'), '/data/plate.type.converter.key.txt')
+  if (is.character(key)) key <- utils::read.delim(key, stringsAsFactors = FALSE)
+  if (!is.dta.frame(key)) stop('"key" must be a data frame or a path to a file containing one')
+  if (any(sapply(key, is.factor))) {
+    key <- cbind(
+      Filter(Negate(is.factor), key),
+      as.data.frame(lapply(Filter(Negate(is.factor), key), factor))
+    )
+  }
 
-
-# construct key:
-plate.type.converter.key <- matrix(ncol = 3)
-colnames(plate.type.converter.key) <- c('code', 'plate_type', 'replica')
-plate.type.converter.key <- rbind(plate.type.converter.key, c('R', 'test', 'rep'))
-plate.type.converter.key <- rbind(plate.type.converter.key, c('C', 'control', 'con'))
-plate.type.converter.key <- rbind(plate.type.converter.key, c('P', 'positive', 'pos'))
-plate.type.converter.key <- rbind(plate.type.converter.key, c('N', 'negative', 'neg'))
-plate.type.converter.key <- rbind(plate.type.converter.key, c('A', 'actinonin', 'act'))
-plate.type.converter.key <- as.data.frame(plate.type.converter.key, stringsAsFactors = FALSE)
-
-plate.type.converter <- function(x, key = plate.type.converter.key) {
   dots.replica <- c(setNames(as.list(key$replica), key$code), 'unknown')
   dots.type <- c(setNames(as.list(key$plate_type), key$code), 'unknown')
   f_replica <- function(x) do.call(switch, c(x, dots.replica))
@@ -34,7 +45,6 @@ plate.type.converter <- function(x, key = plate.type.converter.key) {
 
   return(x)
 }
-
 
 # benchmarking
 # a <- rep(c('R', 'C'), 10)
@@ -58,5 +68,4 @@ plate.type.converter <- function(x, key = plate.type.converter.key) {
 #   vapply(x, f, character(1), USE.NAMES = FALSE)
 # }
 # microbenchmark::microbenchmark(f_sub(a), f_swi(a))
-
 
