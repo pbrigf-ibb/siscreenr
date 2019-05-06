@@ -4,25 +4,54 @@
 \alias{normalize}
 \title{normalize screen data}
 \usage{
-normalize(scr, method)
+normalize(scr, variables, group, reference, method = c("median", "mean",
+  "Tukey"))
 }
 \arguments{
 \item{scr}{screen object, a data frame}
 
+\item{variables}{variables to normalize;
+character vector of column names or numeric vector of column indices}
+
+\item{group}{character vector of grouping variables, i.e.
+variables whose intersections defines a single group;
+passed to \code{dplyr::group_by}}
+
+\item{reference}{character vector of \code{well_type}s
+to use reference for mean, and median methods;
+passed to \code{dplyr::filter}}
+
 \item{method}{normalization method, see \code{Details}}
 }
 \value{
-an invisible \code{data frame}
+an invisible \code{data.frame}
 }
 \description{
-Normalize data by one the (currently three) available methods:
-
-\code{mean}: subtract reference mean from each data point
-
-\code{median}: subtract reference median from each data point
-
-\code{Tukey}: run Tukey's median Polish
+Normalize data, i.e. express each point as its deviation from a center.
 }
 \details{
-There will be some details here...
+There are three normalization methods available at the moment:
+\itemize{
+  \item{
+  \code{mean}: subtract reference mean from each data point
+  }
+  \item{
+  \code{median}: subtract reference median from each data point
+  }
+  \item{
+  \code{Tukey}: run Tukey's median polish and return residuals;
+                calls \code{stats::medpolish}
+  }
 }
+}
+\section{Warnings}{
+
+If you are using the Tukey method, variables will be temporarily converted
+from vectors to matrices. Make sure your data frames are ordered by column
+(the default way matrices are filled) rather than by row (the default ScanR format).
+
+For other methods a reference subset can be specified.
+This is done by filtering rows based on the \code{well_type} column, so there must be one.
+If no reference is declared, normalization will be done against the whole population.
+}
+

@@ -27,7 +27,7 @@
 plate.type.converter <- function(x, key) {
   if (missing(key)) key <- paste0(path.package('siscreenr'), '/data/plate.type.converter.key.txt')
   if (is.character(key)) key <- utils::read.delim(key, stringsAsFactors = FALSE)
-  if (!is.dta.frame(key)) stop('"key" must be a data frame or a path to a file containing one')
+  if (!is.data.frame(key)) stop('"key" must be a data frame or a path to a file containing one')
   if (any(sapply(key, is.factor))) {
     key <- cbind(
       Filter(Negate(is.factor), key),

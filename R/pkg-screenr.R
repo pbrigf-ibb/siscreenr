@@ -14,15 +14,27 @@
 #' @author Aleksander Chlebowski
 #'
 #' @section Functions:
-#' \code{build_screen} collate all data into a single data frame, reaarrange and add layout
-#'
-#' \code{normalize} normalize data by one of the available methods: subtract mean/median of reference or Tukey's median polish (for matrices)
-#'
-#' \code{zscore} calculate (robust) z scores
-#'
-#' \code{hit.score} classify data point as hit or not based on a given treshold; usually used on z scores
-#'
-#' \code{sum.score} summarize hit scores, either as a sum or as a fraction and assign hit status to data point
+#' \itemize{
+#'   \item{
+#'   \code{build_screen} collate all data into a single data frame, reaarrange and add layout
+#'   }
+#'   \item{
+#'   \code{normalize} normalize data by one of the available methods:
+#'   subtract mean/median of reference or Tukey's median polish (for matrices)
+#'   }
+#'   \item{
+#'   \code{zscore} calculate (robust) z scores
+#'   }
+#'   \item{
+#'   \code{hitscore} classify data point as hit or not based on a given treshold; usually used on z scores
+#'   }
+#'   \item{
+#'   \code{sumscore} calculate summary hit score and assign hit status to data point
+#'   }
+#'   \item{
+#'   \code{fracscore} calculate fractional hit score and assign hit status to data point
+#'   }
+#' }
 #'
 #' @docType package
 #' @name siscreenr

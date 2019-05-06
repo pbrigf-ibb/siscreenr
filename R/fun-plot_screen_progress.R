@@ -33,7 +33,11 @@ plot_screen_progress <- function(directory, file) {
 
   # check for screen log file
   logfiles <- list.files(pattern = 'screenlog')
-  if (length(logfiles) == 1) logfile <- logfiles else {
+  if (length(logfiles) == 0) {
+    stop('no screen log found')
+  } else if (length(logfiles) == 1) {
+    logfile <- logfiles
+  } else {
     cat('choose a file:\n')
     for (i in seq_along(logfiles)){
       cat(i, '\t', logfiles[i])

@@ -41,45 +41,26 @@
 zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
   if (!is.numeric(x)) stop('"x" must be numeric')
 
-  if (is.null(reference)) {
-    ref <- x
-  } else {
-    ref <- x[reference]
-  }
-  if (deviations == TRUE) {
-    loc <- 0
-  } else if (robust == TRUE) {
-    loc <- median(ref, na.rm = TRUE)
-  } else if (robust == FALSE) {
-    loc <- mean(ref, na.rm = TRUE)
-  }
-  if (robust == TRUE) {
-    disp <- mad(ref, na.rm = TRUE)
-  } else if (robust == FALSE) {
-    disp <- sd(ref, na.rm = TRUE)
-  }
-
-  # alternative syntax
-  # ref <-
-  #   if (is.null(reference)) {
-  #     x
-  #   } else {
-  #     x[reference]
-  #   }
-  # loc <-
-  #   if (deviations) {
-  #     0
-  #   } else if (robust) {
-  #     median(ref, na.rm = TRUE)
-  #   } else {
-  #     mean(ref, na.rm = TRUE)
-  #   }
-  # disp <-
-  #   if (robust) {
-  #     mad(ref, na.rm = TRUE)
-  #   } else {
-  #     mean(ref, na.rm = TRUE)
-  #   }
+  ref <-
+    if (is.null(reference)) {
+      x
+    } else {
+      x[reference]
+    }
+  loc <-
+    if (deviations) {
+      0
+    } else if (robust) {
+      median(ref, na.rm = TRUE)
+    } else {
+      mean(ref, na.rm = TRUE)
+    }
+  disp <-
+    if (robust) {
+      mad(ref, na.rm = TRUE)
+    } else {
+      mean(ref, na.rm = TRUE)
+    }
 
   zsc <- (x - loc) / disp
   return(zsc)
