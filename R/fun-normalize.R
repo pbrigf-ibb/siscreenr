@@ -78,7 +78,10 @@ normalize <- function(scr, variables, group, reference,
     names(Y) <- gsub('_normalized$', paste0('_normalized_', method), names(Y))
   }
   # clean up and return
-  Z <- Y %>% dplyr::arrange('temporary_id_column_9000') %>% dplyr::select(-'temporary_id_column_9000')
+  Z <- Y %>%
+    dplyr::arrange(temporary_id_column_9000) %>%
+    dplyr::select(-temporary_id_column_9000) %>%
+    data.frame
   invisible(Z)
 }
 
