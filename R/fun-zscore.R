@@ -31,12 +31,6 @@
 #' rather than the whole. Should this be the case, supply a logical vector to determine
 #' the reference subpopulation.
 #'
-#' @examples
-#' a <- rnorm(1000, 55, 3)
-#' hist(a, breaks = 50)
-#' z <- zscore(a)
-#' hist(z, breaks = 50)
-#' plot(x = a, y = z)
 
 zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
   if (!is.numeric(x)) stop('"x" must be numeric')
@@ -51,13 +45,13 @@ zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
     if (deviations) {
       0
     } else if (robust) {
-      median(ref, na.rm = TRUE)
+      stats::median(ref, na.rm = TRUE)
     } else {
       mean(ref, na.rm = TRUE)
     }
   disp <-
     if (robust) {
-      mad(ref, na.rm = TRUE)
+      stats::mad(ref, na.rm = TRUE)
     } else {
       mean(ref, na.rm = TRUE)
     }
@@ -65,3 +59,10 @@ zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
   zsc <- (x - loc) / disp
   return(zsc)
 }
+
+#' @examples
+#' a <- rnorm(1000, 55, 3)
+#' hist(a, breaks = 50)
+#' z <- zscore(a)
+#' hist(z, breaks = 50)
+#' plot(x = a, y = z)

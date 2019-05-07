@@ -48,10 +48,3 @@ rather than the whole. Should this be the case, supply a logical vector to deter
 the reference subpopulation.
 }
 
-\examples{
-a <- rnorm(1000, 55, 3)
-hist(a, breaks = 50)
-z <- zscore(a)
-hist(z, breaks = 50)
-plot(x = a, y = z)
-}

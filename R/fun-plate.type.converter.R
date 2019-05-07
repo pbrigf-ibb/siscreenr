@@ -5,7 +5,7 @@
 #' \code{plate_type} and \code{replica}, according to a dictionary.
 #'
 #' The dictionary is supplied as a data frame, by default one found in a file
-#' in the package's data directory. The file contains five options as of May 2019
+#' in the package's \code{extdata} directory. The file contains five options as of May 2019
 #' and more options can easily be added by the user.
 #'
 #' Alternatively, the dictionary can be taken from a custom file or an object specified by
@@ -18,14 +18,9 @@
 #'
 #' @return screen object in which columns "plate_type" and "replica" are altered
 #'
-#' @importFrom magrittr %>%
-#'
-#' @examples
-#' d <- data.frame(plate_type = rep(c('R', 'C'), each = 3))
-#' plate.type.converter(d)
 
 plate.type.converter <- function(x, key) {
-  if (missing(key)) key <- paste0(path.package('siscreenr'), '/data/plate.type.converter.key.txt')
+  if (missing(key)) key <- paste0(path.package('siscreenr'), '/extdata/plate.type.converter.key.txt')
   if (is.character(key)) key <- utils::read.delim(key, stringsAsFactors = FALSE)
   if (!is.data.frame(key)) stop('"key" must be a data frame or a path to a file containing one')
   if (any(sapply(key, is.factor))) {
@@ -35,8 +30,8 @@ plate.type.converter <- function(x, key) {
     )
   }
 
-  dots.replica <- c(setNames(as.list(key$replica), key$code), 'unknown')
-  dots.type <- c(setNames(as.list(key$plate_type), key$code), 'unknown')
+  dots.replica <- c(stats::setNames(as.list(key$replica), key$code), 'unknown')
+  dots.type <- c(stats::setNames(as.list(key$plate_type), key$code), 'unknown')
   f_replica <- function(x) do.call(switch, c(x, dots.replica))
   f_plate_type <- function(x) do.call(switch, c(x, dots.type))
 
@@ -45,6 +40,10 @@ plate.type.converter <- function(x, key) {
 
   return(x)
 }
+
+#' @examples
+#' d <- data.frame(plate_type = rep(c('R', 'C'), each = 3))
+#' plate.type.converter(d)
 
 # benchmarking
 # a <- rep(c('R', 'C'), 10)

@@ -21,15 +21,11 @@ It checks the plate type encoded in field 4 of the plate name and changes the co
 }
 \details{
 The dictionary is supplied as a data frame, by default one found in a file
-in the package's data directory. The file contains five options as of May 2019
+in the package's \code{extdata} directory. The file contains five options as of May 2019
 and more options can easily be added by the user.
 
 Alternatively, the dictionary can be taken from a custom file or an object specified by
 the \code{key} argument. Be careful to keep to the format of the default file.
 
 To view or edit the dictionary file find it with \code{path.package('siscreenr')}.
-}
-\examples{
-d <- data.frame(plate_type = rep(c('R', 'C'), each = 3))
-plate.type.converter(d)
 }

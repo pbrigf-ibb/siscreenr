@@ -21,16 +21,10 @@ setwd(.home)
 
 s %<>% mutate(green_fraction = nucs_in_green / (nucs_in_green + nucs_in_red))
 
-n1 <- normalize(s, variables = c('nucs_in_green', 'nucs_in_red', 'green_fraction'),
-               group = c('plate', 'replica', 'plated'), reference = 'nt', method = 'mean')
-n2 <- normalize(s, variables = c('nucs_in_green', 'nucs_in_red', 'green_fraction'),
-                group = c('plate', 'replica', 'plated'), reference = 'nt', method = 'median')
-n3 <- normalize(s, variables = c('nucs_in_green', 'nucs_in_red', 'green_fraction'),
-                group = c('plate', 'replica', 'plated'), reference = 'nt', method = 'Tukey')
-hm <- data.frame(mean = n1$green_fraction_normalized_mean,
-                 median = n2$green_fraction_normalized_median,
-                 medpolish = n3$green_fraction_normalized_Tukey)
-sample_n(hm, 20)
+n <- normalize(s, variables = c('nucs_in_green', 'nucs_in_red', 'green_fraction'),
+               group = c('plate', 'replica', 'plated'), reference = 'nt', method = 'medpolish')
+
+
 
 stop('=== D = O = N = E ===')
 

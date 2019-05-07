@@ -292,17 +292,17 @@ build_screen2 <- function(logfile, layout, datadir = './data/', rem.col,
     dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica')) %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1, remove = FALSE) %>%
-    dplyr::mutate(plate = gsub('[A-Z]', '', plate), plate = as.numeric(plate),
-                  replica = gsub('R', 'rep', replica),
-                  replica = gsub('C', 'con', replica),
-                  replica = gsub('P', 'pos', replica),
-                  replica = gsub('N', 'neg', replica),
-                  replica = gsub('A', 'act', replica)) %>%
-    dplyr::mutate(plate_type = gsub('R', 'test', plate_type),
-                  plate_type = gsub('C', 'control', plate_type),
-                  plate_type = gsub('P', 'positive', plate_type),
-                  plate_type = gsub('N', 'negative', plate_type),
-                  plate_type = gsub('A', 'actinonin', plate_type)) %>%
+    dplyr::mutate('plate' = gsub('[A-Z]', '', plate), 'plate' = as.numeric(plate),
+                  'replica' = gsub('R', 'rep', replica),
+                  'replica' = gsub('C', 'con', replica),
+                  'replica' = gsub('P', 'pos', replica),
+                  'replica' = gsub('N', 'neg', replica),
+                  'replica' = gsub('A', 'act', replica)) %>%
+    dplyr::mutate('plate_type' = gsub('R', 'test', plate_type),
+                  'plate_type' = gsub('C', 'control', plate_type),
+                  'plate_type' = gsub('P', 'positive', plate_type),
+                  'plate_type' = gsub('N', 'negative', plate_type),
+                  'plate_type' = gsub('A', 'actinonin', plate_type)) %>%
     dplyr::full_join(lay, .) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension', -'number')

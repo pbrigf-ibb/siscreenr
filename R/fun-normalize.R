@@ -13,8 +13,8 @@
 #'   \code{median}: subtract reference median from each data point
 #'   }
 #'   \item{
-#'   \code{Tukey}: run Tukey's median polish and return residuals;
-#'                 calls \code{stats::medpolish}
+#'   \code{medpolish}: run Tukey's median polish and return residuals;
+#'                     calls \code{stats::medpolish}
 #'   }
 #' }
 #'
@@ -32,7 +32,7 @@
 #' @return an invisible \code{data.frame}
 #'
 #' @section Warnings:
-#' If you are using the Tukey method, variables will be temporarily converted
+#' If you are using the medpolish method, variables will be temporarily converted
 #' from vectors to matrices. Make sure your data frames are ordered by column
 #' (the default way matrices are filled) rather than by row (the default ScanR format).
 #'
@@ -42,18 +42,18 @@
 #'
 
 normalize <- function(scr, variables, group, reference,
-                      method = c('median', 'mean', 'Tukey')) {
+                      method = c('median', 'mean', 'medpolish')) {
   # check arguments
   missing.columns <- setdiff(variables, names(scr))
   if (length(missing.columns > 0))
     stop('\n',
          'missing variables selected: ', paste(missing.columns, collapse = ', '), '\n',
          'avaiable variables: ', paste(names(scr), collapse = ', '))
-  if (missing(reference) & method != 'Tukey')
+  if (missing(reference) & method != 'medpolish')
     message('no reference; data will be normalized to the whole of the population')
   if (!missing(reference) & !is.element('well_type', names(scr)))
       stop('reference specification requires a "well_type" column')
-  if (method == 'Tukey' & !missing(reference))
+  if (method == 'medpolish' & !missing(reference))
     message('running median polish, "reference" will be ignored')
 
   # create id column
@@ -63,26 +63,11 @@ normalize <- function(scr, variables, group, reference,
   X <-
     if (missing(group)) scr else
       dplyr::group_by(scr, .dots = group)
-  # assign normalization method
+  # assign normalization method (methods are defined as separate functions)
   meth <- switch(method,
-                 mean = function(x) {
-                   x - mean(x, na.rm = T)
-                 },
-                 median = function(x) {
-                   x - median(x, na.rm = T)
-                 },
-                 Tukey = function(x) {
-                   if (any(is.infinite(x)))
-                     stop('infinite values will derail the running median procedure', call. = F)
-
-                   nr <- length(unique(as.character(scr$row)))
-                   nc <- length(unique(as.character(scr$column)))
-
-                   x_mat <- matrix(x, nrow = nr, ncol = nc)
-                   polished <- stats::medpolish(x_mat, trace.iter = F, na.rm = T)
-                   return(as.vector(polished$residuals))
-                 }
-  )
+                 mean = meth.mean,
+                 median = meth.median,
+                 medpolish = meth.medpolish)
   # do the deed
   if (length(variables) == 1) {
     expr.mut <- parse(text = paste0('meth(', variables, ')'))
@@ -93,7 +78,19 @@ normalize <- function(scr, variables, group, reference,
     names(Y) <- gsub('_normalized$', paste0('_normalized_', method), names(Y))
   }
   # clean up and return
-  Z <- Y %>% dplyr::arrange(temporary_id_column_9000) %>% dplyr::select(-temporary_id_column_9000)
+  Z <- Y %>% dplyr::arrange('temporary_id_column_9000') %>% dplyr::select(-'temporary_id_column_9000')
   invisible(Z)
 }
 
+meth.mean <- function(x) x - mean(x, na.rm = T)
+meth.median <- function(x) x - stats::median(x, na.rm = T)
+meth.medpolish <- function(x) {
+  if (any(is.infinite(x)))
+    stop('infinite values will derail the running median procedure', call. = F)
+  X <- get('scr', envir = parent.frame())
+  nr <- length(unique(as.character(X$row)))
+  nc <- length(unique(as.character(X$column)))
+  x_mat <- matrix(x, nrow = nr, ncol = nc)
+  polished <- stats::medpolish(x_mat, trace.iter = F, na.rm = T)
+  return(as.vector(polished$residuals))
+}

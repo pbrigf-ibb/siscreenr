@@ -5,7 +5,7 @@
 \title{normalize screen data}
 \usage{
 normalize(scr, variables, group, reference, method = c("median", "mean",
-  "Tukey"))
+  "medpolish"))
 }
 \arguments{
 \item{scr}{screen object, a data frame}
@@ -39,14 +39,14 @@ There are three normalization methods available at the moment:
   \code{median}: subtract reference median from each data point
   }
   \item{
-  \code{Tukey}: run Tukey's median polish and return residuals;
-                calls \code{stats::medpolish}
+  \code{medpolish}: run Tukey's median polish and return residuals;
+                    calls \code{stats::medpolish}
   }
 }
 }
 \section{Warnings}{
 
-If you are using the Tukey method, variables will be temporarily converted
+If you are using the medpolish method, variables will be temporarily converted
 from vectors to matrices. Make sure your data frames are ordered by column
 (the default way matrices are filled) rather than by row (the default ScanR format).
 

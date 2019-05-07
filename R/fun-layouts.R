@@ -39,18 +39,6 @@
 #' @importFrom utils read.delim
 #' @importFrom utils write.table
 #'
-#' @examples
-#' L <- layouts('layout_S14_test.txt',
-#'              'layout_S14_control.txt')
-#' head(L)
-#' table(L$plated, L$well_type, L$plate_type)
-#'
-#' layouts('layout_S14_test.txt',
-#'         'layout_S14_control.txt',
-#'         file = 'temp_layout_S14.txt')
-#' head(read.delim('temp_layout_S14.txt'))
-#'
-
 
 layouts <- function(..., file) {
   # change global option and clean up afterwards
@@ -77,7 +65,18 @@ layouts <- function(..., file) {
   }
 
   # apply the function over all requested files
-  L <- lapply(files, process_layout) %>% do.call(rbind, args = .)
+  L <- do.call(rbind, lapply(files, process_layout))
 
   if (missing(file)) return(L) else write.table(L, file, quote = F, sep = '\t', row.names = F)
 }
+
+#' @examples
+#' L <- layouts('layout_S14_test.txt',
+#'              'layout_S14_control.txt')
+#' head(L)
+#' table(L$plated, L$well_type, L$plate_type)
+#'
+#' layouts('layout_S14_test.txt',
+#'         'layout_S14_control.txt',
+#'         file = 'temp_layout_S14.txt')
+#' head(read.delim('temp_layout_S14.txt'))
