@@ -4,7 +4,7 @@
 \alias{normalize}
 \title{normalize screen data}
 \usage{
-normalize(scr, variables, group, reference, method = c("median", "mean",
+normalize(scr, variables, reference, method = c("median", "mean",
   "medpolish"))
 }
 \arguments{
@@ -13,13 +13,7 @@ normalize(scr, variables, group, reference, method = c("median", "mean",
 \item{variables}{variables to normalize;
 character vector of column names or numeric vector of column indices}
 
-\item{group}{character vector of grouping variables, i.e.
-variables whose intersections defines a single group;
-passed to \code{dplyr::group_by}}
-
-\item{reference}{character vector of \code{well_type}s
-to use reference for mean, and median methods;
-passed to \code{dplyr::filter}}
+\item{reference}{logical predicate that defines reference observations}
 
 \item{method}{normalization method, see \code{Details}}
 }

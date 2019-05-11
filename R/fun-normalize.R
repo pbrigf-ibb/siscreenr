@@ -21,12 +21,7 @@
 #' @param scr screen object, a data frame
 #' @param variables variables to normalize;
 #'                  character vector of column names or numeric vector of column indices
-#' @param group character vector of grouping variables, i.e.
-#'              variables whose intersections defines a single group;
-#'              passed to \code{dplyr::group_by}
-#' @param reference character vector of \code{well_type}s
-#'                  to use reference for mean, and median methods;
-#'                  passed to \code{dplyr::filter}
+#' @param reference logical predicate that defines reference observations
 #' @param method normalization method, see \code{Details}
 #'
 #' @return an invisible \code{data.frame}
@@ -41,7 +36,7 @@
 #' If no reference is declared, normalization will be done against the whole population.
 #'
 
-normalize <- function(scr, variables, group, reference,
+normalize <- function(scr, variables, reference,
                       method = c('median', 'mean', 'medpolish')) {
   # check arguments
   missing.columns <- setdiff(variables, names(scr))
@@ -56,13 +51,14 @@ normalize <- function(scr, variables, group, reference,
   if (method == 'medpolish' & !missing(reference))
     message('running median polish, "reference" will be ignored')
 
+  # capture reference definition
+  r <- substitute(reference)
+  # evaluate it within scr to get a logical vector of reference observations
+  Reference <- with(scr, eval(r))
+
   # create id column
   scr$temporary_id_column_9000 <- 1:nrow(scr)
 
-  # group data frame
-  X <-
-    if (missing(group)) scr else
-      dplyr::group_by(scr, .dots = group)
   # assign normalization method (methods are defined as separate functions)
   meth <- switch(method,
                  mean = meth.mean,
@@ -71,10 +67,10 @@ normalize <- function(scr, variables, group, reference,
   # do the deed
   if (length(variables) == 1) {
     expr.mut <- parse(text = paste0('meth(', variables, ')'))
-    Y <- dplyr::mutate(X, temporary_normalized_variable_name = eval(expr.mut))
+    Y <- dplyr::mutate(scr, temporary_normalized_variable_name = eval(expr.mut))
     names(Y)[length(names(Y))] <- paste(variables, 'normalized', method, sep = '_')
   } else {
-    Y <- dplyr::mutate_at(X, variables, dplyr::funs(normalized = meth))
+    Y <- dplyr::mutate_at(scr, variables, dplyr::funs(normalized = meth))
     names(Y) <- gsub('_normalized$', paste0('_normalized_', method), names(Y))
   }
   # clean up and return
@@ -85,8 +81,16 @@ normalize <- function(scr, variables, group, reference,
   invisible(Z)
 }
 
-meth.mean <- function(x) x - mean(x, na.rm = T)
-meth.median <- function(x) x - stats::median(x, na.rm = T)
+meth.mean <- function(x) {
+  Reference <- get('Reference', envir = parent.frame())
+  x - mean(x[Reference], na.rm = T)
+}
+
+meth.median <- function(x) {
+  Reference <- get('Reference', envir = parent.frame())
+  x - stats::median(x[Reference], na.rm = T)
+}
+
 meth.medpolish <- function(x) {
   if (any(is.infinite(x)))
     stop('infinite values will derail the running median procedure', call. = F)
