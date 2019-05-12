@@ -46,8 +46,6 @@ normalize <- function(scr, variables, reference,
          'avaiable variables: ', paste(names(scr), collapse = ', '))
   if (missing(reference) & method != 'medpolish')
     message('no reference; data will be normalized to the whole of the population')
-  if (!missing(reference) & !is.element('well_type', names(scr)))
-      stop('reference specification requires a "well_type" column')
   if (method == 'medpolish' & !missing(reference))
     message('running median polish, "reference" will be ignored')
 
@@ -65,14 +63,10 @@ normalize <- function(scr, variables, reference,
                  median = meth.median,
                  medpolish = meth.medpolish)
   # do the deed
-  if (length(variables) == 1) {
-    expr.mut <- parse(text = paste0('meth(', variables, ')'))
-    Y <- dplyr::mutate(scr, temporary_normalized_variable_name = eval(expr.mut))
-    names(Y)[length(names(Y))] <- paste(variables, 'normalized', method, sep = '_')
-  } else {
-    Y <- dplyr::mutate_at(scr, variables, dplyr::funs(normalized = meth))
-    names(Y) <- gsub('_normalized$', paste0('_normalized_', method), names(Y))
-  }
+  Y <- dplyr::mutate_at(.tbl = scr, .vars = variables, .funs = list(normalized_suffix_9000 = meth))
+  # update names
+  names(Y)[endsWith(names(Y), 'normalized_suffix_9000')] <- paste0(variables, '_normalized_', method)
+
   # clean up and return
   Z <- Y %>%
     dplyr::arrange(temporary_id_column_9000) %>%

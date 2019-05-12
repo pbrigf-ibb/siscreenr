@@ -25,8 +25,8 @@ vs <- c('nucs_in_green', 'nucs_in_red', 'green_fraction')
 vn <- paste(vs, 'normalized_medpolish', sep = '_')
 vz <- paste(vn, 'zscore', sep = '_')
 
-n <-
-  normalize(s, variables = vs, group = c('plate', 'replica', 'plated'), method = 'medpolish') %>%
+n <- s %>% group_by(plate, replica, plated) %>%
+  normalize(variables = vs, method = 'medpolish') %>%
   dplyr::glimpse()
 
 R <- s %>% slice(1:max(.$well)) %>% .$well_type %>% grepl('sample', .); matrix(R, 16, 24)
