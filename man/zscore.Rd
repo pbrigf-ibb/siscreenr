@@ -2,9 +2,21 @@
 % Please edit documentation in R/fun-zscore.R
 \name{zscore}
 \alias{zscore}
+\alias{zscore.default}
+\alias{zscore.data.frame}
+\alias{zscore.grouped_df}
 \title{calculate (robust) zscore}
 \usage{
-zscore(x, robust = TRUE, deviations = FALSE, reference = NULL)
+zscore(x, ...)
+
+\method{zscore}{default}(x, robust = TRUE, deviations = FALSE,
+  reference, ...)
+
+\method{zscore}{data.frame}(x, robust = TRUE, deviations = FALSE,
+  reference, variables, ...)
+
+\method{zscore}{grouped_df}(x, robust = TRUE, deviations = FALSE,
+  reference, variables, ...)
 }
 \arguments{
 \item{x}{a numeric vector}
@@ -13,7 +25,12 @@ zscore(x, robust = TRUE, deviations = FALSE, reference = NULL)
 
 \item{deviations}{logical flag whether the supplied data is raw or normalized}
 
-\item{reference}{logical vector that points out reference observations}
+\item{reference}{optional determination of reference observations;
+for the dafault method, a logical vector;
+for the data frame method, a logical vector
+or any predicate (bare or as string) that refers to \code{x}'s variables}
+
+\item{variables}{for data frame method, character vector of variables to standardize}
 }
 \value{
 a numeric vector of z scores
@@ -32,6 +49,15 @@ is divided by the distribution's standard deviation. For a robust z score
 the mean and standard deviation are replaced by the median and median absolute deviation,
 respectively.
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{default}: for numeric vectors
+
+\item \code{data.frame}: calculates zscores for requested variables in a data frame
+
+\item \code{grouped_df}: see \link{\code{acutils::metamethod}}
+}}
+
 \section{Deviations}{
 
 Data is accepted as raw or normalized and the function can be informed of this with a logical flag.
@@ -43,8 +69,9 @@ may introduce differences differences.
 
 \section{Reference}{
 
-If desired, data points in the sample can be standardized against part of the distribution
-rather than the whole. Should this be the case, supply a logical vector to determine
-the reference subpopulation.
+Data points in the sample can be standardized against part
+of the distribution rather than the whole. Should this be the case,
+supply a logical vector (or predicate that will be evaluated
+within the data frame) to determine the reference subpopulation.
 }
 
