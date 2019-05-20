@@ -42,7 +42,7 @@ This is a method of data normalization in a high throughput screening campaign.
 \section{Methods (by class)}{
 \itemize{
 \item \code{data.frame}: uses \code{positive} and \code{negative} to calculate mean reference values,
-runs function for NPI or ACT over desired variables with \code{lapply},
+runs function for NPI or NPA over desired variables with \code{lapply},
 then \code{cbind}s the result to \code{x}
 
 \item \code{grouped_df}: see \code{\link{acutils::metamethod}}

@@ -36,12 +36,11 @@ percentage <- function(x, variables, positive, negative,
 
 #' @export
 #' @describeIn percentage
+#' uses \code{positive} and \code{negative} to calculate mean reference values,
+#' runs function for NPI or NPA over desired variables with \code{lapply},
+#' then \code{cbind}s the result to \code{x}
 percentage.data.frame <- function(x, variables, positive, negative,
                        inhact = c('inhibition', 'activation')) {
-  #' uses \code{positive} and \code{negative} to calculate mean reference values,
-  #' runs function for NPI or ACT over desired variables with \code{lapply},
-  #' then \code{cbind}s the result to \code{x}
-
   # check arguments
   if (!is.data.frame(x)) stop('x must be a data frame')
   if (!missing(variables) & !all(variables %in% names(x)))
