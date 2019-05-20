@@ -15,7 +15,11 @@
 #' @param x a numeric vector
 #' @param robust logical flag whether to calculate normal or robust z scores
 #' @param deviations logical flag whether the supplied data is raw or normalized
-#' @param reference logical vector that points out reference observations
+#' @param reference optional determination of reference observations;
+#'                  for the dafault method, a logical vector;
+#'                  for the data frame method, a logical vector
+#'                  or any predicate (bare or as string) that refers to \code{x}'s variables
+#' @param variables for data frame method, character vector of variables to standardize
 #'
 #' @return a numeric vector of z scores
 #'
@@ -27,16 +31,23 @@
 #' may introduce differences differences.
 
 #' @section Reference:
-#' If desired, data points in the sample can be standardized against part of the distribution
-#' rather than the whole. Should this be the case, supply a logical vector to determine
-#' the reference subpopulation.
+#' Data points in the sample can be standardized against part
+#' of the distribution rather than the whole. Should this be the case,
+#' supply a logical vector (or predicate that will be evaluated
+#' within the data frame) to determine the reference subpopulation.
 #'
 
-zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
+zscore <- function(x, ...) {
+  UseMethod('zscore')
+}
+
+#' @export
+#' @describeIn zscore for numeric vectors
+zscore.default <- function(x, robust = TRUE, deviations = FALSE, reference, ...) {
   if (!is.numeric(x)) stop('"x" must be numeric')
 
   ref <-
-    if (is.null(reference)) {
+    if (missing(reference)) {
       x
     } else {
       x[reference]
@@ -59,6 +70,44 @@ zscore <- function(x, robust = TRUE, deviations = FALSE, reference = NULL) {
   zsc <- (x - loc) / disp
   return(zsc)
 }
+
+#' @export
+#' @describeIn zscore calculates zscores for requested variables in a data frame
+zscore.data.frame <- function(x, robust = TRUE, deviations = FALSE, reference, variables, ...) {
+
+  # check arguments
+  if (!is.data.frame(x)) stop('x must be a data frame')
+  if (missing(variables)) {
+    message('no variables selected; taking all numeric variables except "well" and "column"')
+    variables <- setdiff(names(Filter(is.numeric, x)), c('well', 'column'))
+  } else {
+    if (!is.character(variables)) stop('varaibles must be a character vector')
+    if (!all(variables %in% names(x))) stop('invalid variables selected')
+    if (!all(vapply(x[variables], is.numeric, logical(1)))) stop('non-numeric variables selected')
+  }
+  # get reference as logical vector
+  Reference <-
+    if (is.logical(reference)) reference else
+      if (is.call(reference)) eval(reference, x) else
+        if (is.character(reference)) eval(substitute(eval(parse(text = reference))), x)
+  # get arguments from original call
+  arguments <- as.list(match.call())
+  # compute z scores
+  y <- lapply(x[variables],
+              function(x) zscore.default(x,
+                                         robust = arguments$robust,
+                                         deviations = arguments$deviation,
+                                         reference = Reference))
+  # name results
+  names(y) <- paste0(variables, '_zscore')
+  # add results to x
+  Y <- cbind(x, as.data.frame(y))
+  return(Y)
+}
+
+#' @export
+#' @describeIn zscore see \link{\code{acutils::metamethod}}
+zscore.grouped_df <- acutils::metamethod(zscore.data.frame)
 
 #' @examples
 #' a <- rnorm(1000, 55, 3)

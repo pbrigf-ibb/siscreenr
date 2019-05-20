@@ -43,15 +43,13 @@ percentage.data.frame <- function(x, variables, positive, negative,
                        inhact = c('inhibition', 'activation')) {
   # check arguments
   if (!is.data.frame(x)) stop('x must be a data frame')
-  if (!missing(variables) & !all(variables %in% names(x)))
-    stop('invalid variables selected')
-  if (!missing(variables) & !is.character(variables))
-    stop('varaibles must be a character vector')
-  if (!all(variables %in% names(x)))
-    stop('invalid variables selcted')
   if (missing(variables)) {
     message('no variables selected; taking all numeric variables except "well" and "column"')
     variables <- setdiff(names(Filter(is.numeric, x)), c('well', 'column'))
+  } else {
+    if (!is.character(variables)) stop('varaibles must be a character vector')
+    if (!all(variables %in% names(x))) stop('invalid variables selected')
+    if (!all(vapply(x[variables], is.numeric, logical(1)))) stop('non-numeric variables selected')
   }
   # capture subset specifications
   pos <- substitute(positive)
