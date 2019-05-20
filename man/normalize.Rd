@@ -2,20 +2,28 @@
 % Please edit documentation in R/fun-normalize.R
 \name{normalize}
 \alias{normalize}
+\alias{normalize.data.frame}
+\alias{normalize.grouped_df}
 \title{normalize screen data}
 \usage{
-normalize(scr, variables, reference, method = c("median", "mean",
-  "medpolish"))
+normalize(x, variables, method = c("median", "mean", "medpolish"),
+  reference)
+
+\method{normalize}{data.frame}(x, variables, method = c("median", "mean",
+  "medpolish"), reference)
+
+\method{normalize}{grouped_df}(x, variables, method = c("median", "mean",
+  "medpolish"), reference)
 }
 \arguments{
-\item{scr}{screen object, a data frame}
+\item{x}{screen object, i.e. a \code{data.frame}, possibly \code{grouped}}
 
 \item{variables}{variables to normalize;
 character vector of column names or numeric vector of column indices}
 
-\item{reference}{logical predicate that defines reference observations}
-
 \item{method}{normalization method, see \code{Details}}
+
+\item{reference}{logical predicate that defines reference observations, bare or character}
 }
 \value{
 an invisible \code{data.frame}
@@ -27,25 +35,35 @@ Normalize data, i.e. express each point as its deviation from a center.
 There are three normalization methods available at the moment:
 \itemize{
   \item{
-  \code{mean}: subtract reference mean from each data point
+  \code{mean}: subtract mean of reference from each data point
   }
   \item{
-  \code{median}: subtract reference median from each data point
+  \code{median}: subtract median of reference from each data point
   }
   \item{
   \code{medpolish}: run Tukey's median polish and return residuals;
-                    calls \code{stats::medpolish}
+                    calls \link{\code{stats::medpolish}}
   }
 }
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{data.frame}: establishes normalization method, with possible \code{reference},
+and runs it on desired variables with \code{lapply},
+then \code{cbind}s the result to \code{x}
+
+\item \code{grouped_df}: see \code{\link{acutils::metamethod}}
+}}
+
 \section{Warnings}{
 
 If you are using the medpolish method, variables will be temporarily converted
 from vectors to matrices. Make sure your data frames are ordered by column
 (the default way matrices are filled) rather than by row (the default ScanR format).
+Also, row and column specifications are necessary to read the matrix dimensions,
+so \code{x} must contain either "row" and "column" variables or a "position" variable.
 
-For other methods a reference subset can be specified.
-This is done by filtering rows based on the \code{well_type} column, so there must be one.
+For other methods a reference subset can be specified. Any logical predicate will do.
 If no reference is declared, normalization will be done against the whole population.
 }
 

@@ -7,22 +7,22 @@
 #' There are three normalization methods available at the moment:
 #' \itemize{
 #'   \item{
-#'   \code{mean}: subtract reference mean from each data point
+#'   \code{mean}: subtract mean of reference from each data point
 #'   }
 #'   \item{
-#'   \code{median}: subtract reference median from each data point
+#'   \code{median}: subtract median of reference from each data point
 #'   }
 #'   \item{
 #'   \code{medpolish}: run Tukey's median polish and return residuals;
-#'                     calls \code{stats::medpolish}
+#'                     calls \link{\code{stats::medpolish}}
 #'   }
 #' }
 #'
-#' @param scr screen object, a data frame
+#' @param x screen object, i.e. a \code{data.frame}, possibly \code{grouped}
 #' @param variables variables to normalize;
 #'                  character vector of column names or numeric vector of column indices
-#' @param reference logical predicate that defines reference observations
 #' @param method normalization method, see \code{Details}
+#' @param reference logical predicate that defines reference observations, bare or character
 #'
 #' @return an invisible \code{data.frame}
 #'
@@ -30,68 +30,86 @@
 #' If you are using the medpolish method, variables will be temporarily converted
 #' from vectors to matrices. Make sure your data frames are ordered by column
 #' (the default way matrices are filled) rather than by row (the default ScanR format).
+#' Also, row and column specifications are necessary to read the matrix dimensions,
+#' so \code{x} must contain either "row" and "column" variables or a "position" variable.
 #'
-#' For other methods a reference subset can be specified.
-#' This is done by filtering rows based on the \code{well_type} column, so there must be one.
+#' For other methods a reference subset can be specified. Any logical predicate will do.
 #' If no reference is declared, normalization will be done against the whole population.
 #'
+#' @export
+#'
+normalize <- function(x, variables, method = c('median', 'mean', 'medpolish'), reference) {
+  UseMethod('normalize')
+}
 
-normalize <- function(scr, variables, reference,
-                      method = c('median', 'mean', 'medpolish')) {
+#' @export
+#' @describeIn normalize
+#' establishes normalization method, with possible \code{reference},
+#' and runs it on desired variables with \code{lapply},
+#' then \code{cbind}s the result to \code{x}
+normalize.data.frame <- function(x, variables, method = c('median', 'mean', 'medpolish'),
+                                 reference) {
   # check arguments
-  missing.columns <- setdiff(variables, names(scr))
+  missing.columns <- setdiff(variables, names(x))
   if (length(missing.columns > 0))
     stop('\n',
          'missing variables selected: ', paste(missing.columns, collapse = ', '), '\n',
-         'avaiable variables: ', paste(names(scr), collapse = ', '))
-  if (missing(reference) & method != 'medpolish')
-    message('no reference; data will be normalized to the whole of the population')
+         'avaiable variables: ', paste(names(x), collapse = ', '))
+  method <- match.arg(method)
+  if (method == 'medpolish' &
+      (!is.element('position', names(x)) |
+        any(!is.element(c('row', 'column'), names(x)))))
+    stop('"medpolish" method requires well coordinates, see help')
   if (method == 'medpolish' & !missing(reference))
     message('running median polish, "reference" will be ignored')
+  if (method != 'medpolish') {
+    if (!missing(reference)) {
+      # capture reference definition
+      r <- substitute(reference)
+      r <- if (is.call(r)) r else substitute(eval(parse(text = r)))
 
-  # capture reference definition
-  r <- substitute(reference)
-  # evaluate it within scr to get a logical vector of reference observations
-  Reference <- with(scr, eval(r))
+      # evaluate it within x to get a logical vector of reference observations
+      Reference <- with(x, eval(r))
+    } else {
+      message('no reference; data will be normalized to the whole of the population')
+      Reference <- TRUE
+    }
+  }
 
-  # create id column
-  scr$temporary_id_column_9000 <- 1:nrow(scr)
+  # define normalization methods
+  meth.mean <- function(x) {
+    R <- mean(x[Reference], na.rm = T)
+    x - R
+  }
+  meth.median <- function(x) {
+    R <- stats::median(x[Reference], na.rm = T)
+    x - R
+  }
+  meth.medpolish <- function(x) {
+    if (any(is.infinite(x)))
+      stop('infinite values will derail the running median procedure', call. = F)
+    X <- get('x', parent.frame(2))
+    nr <- length(unique(as.character(X$row)))
+    nc <- length(unique(as.character(X$column)))
+    x_mat <- matrix(x, nrow = nr, ncol = nc)
+    polished <- stats::medpolish(x_mat, trace.iter = F, na.rm = T)
+    return(as.vector(polished$residuals))
+  }
 
   # assign normalization method (methods are defined as separate functions)
   meth <- switch(method,
                  mean = meth.mean,
                  median = meth.median,
                  medpolish = meth.medpolish)
+
   # do the deed
-  Y <- dplyr::mutate_at(.tbl = scr, .vars = variables, .funs = list(normalized_suffix_9000 = meth))
-  # update names
-  names(Y)[endsWith(names(Y), 'normalized_suffix_9000')] <- paste0(variables, '_normalized_', method)
-
-  # clean up and return
-  Z <- Y %>%
-    dplyr::arrange(temporary_id_column_9000) %>%
-    dplyr::select(-temporary_id_column_9000) %>%
-    data.frame
-  invisible(Z)
+  x_normalized <- lapply(x[variables], meth)
+  names(x_normalized) <- paste0(variables, '_normalized_', method)
+  x_result <- cbind(x, as.data.frame(x_normalized))
+  invisible(x_result)
 }
 
-meth.mean <- function(x) {
-  Reference <- get('Reference', envir = parent.frame())
-  x - mean(x[Reference], na.rm = T)
-}
+#' @export
+#' @describeIn normalize see \code{\link{acutils::metamethod}}
+normalize.grouped_df <- acutils::metamethod(normalize.data.frame)
 
-meth.median <- function(x) {
-  Reference <- get('Reference', envir = parent.frame())
-  x - stats::median(x[Reference], na.rm = T)
-}
-
-meth.medpolish <- function(x) {
-  if (any(is.infinite(x)))
-    stop('infinite values will derail the running median procedure', call. = F)
-  X <- get('scr', envir = parent.frame())
-  nr <- length(unique(as.character(X$row)))
-  nc <- length(unique(as.character(X$column)))
-  x_mat <- matrix(x, nrow = nr, ncol = nc)
-  polished <- stats::medpolish(x_mat, trace.iter = F, na.rm = T)
-  return(as.vector(polished$residuals))
-}
