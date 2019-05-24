@@ -12,7 +12,7 @@ separate_flag(scr, flag = "wells_rescanned", newname, sep = ", ",
 
 \item{flag}{name of column to transform, given as character}
 
-\item{newname}{new name for the \code{flag} column, given as string; optional}
+\item{newname}{optional new name for the \code{flag} column, given as string}
 
 \item{sep}{splitting terms for \code{flag} strings, passed to \code{strsplit}}
 

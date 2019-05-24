@@ -14,7 +14,7 @@
 #'   }
 #'   \item{
 #'   \code{medpolish}: run Tukey's median polish and return residuals;
-#'                     calls \link{\code{stats::medpolish}}
+#'                     calls \code{stats::medpolish}
 #'   }
 #' }
 #'
@@ -114,6 +114,6 @@ normalize.data.frame <- function(x, variables, method = c('median', 'mean', 'med
 }
 
 #' @export
-#' @describeIn normalize see \code{\link{acutils::metamethod}}
+#' @describeIn normalize see \code{acutils::metamethod}
 normalize.grouped_df <- acutils::metamethod(normalize.data.frame)
 

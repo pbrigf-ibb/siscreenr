@@ -39,30 +39,29 @@
 #' @param well.ID name of column with well identifier, given as character;
 #'               see \code{Well identifiers}
 #' @param flag name of column to transform, given as character
-#' @param newname new name for the \code{flag} column, given as string; optional
+#' @param newname optional new name for the \code{flag} column, given as string
 #' @param sep splitting terms for \code{flag} strings, passed to \code{strsplit}
 #'
 #' @return a \code{data frame} where the flag variable was converted from
 #'         string to logical and optionally renamed
 #'
-#' @importFrom magrittr %>%
-#'
 
 separate_flag <- function(scr, flag = 'wells_rescanned', newname,
                           sep = ', ', well.ID = 'position') {
   #check arguments
-  if (!well.ID %in% colnames(scr)) stop('invalid column name in "well.ID"')
-  if (!flag %in% colnames(scr)) stop('invalid column name in "flag"')
+  if (!is.element(well.ID, colnames(scr))) stop('invalid column name in "well.ID"')
+  if (!is.element(flag, colnames(scr))) stop('invalid column name in "flag"')
   # isolate well.ID
   A <- scr[[well.ID]]
   # isolate flag and split the string
-  B <- scr[[flag]] %>% strsplit(., split = sep)
+  B <- strsplit(scr[[flag]], split = sep)
   # compare the two
   C <- mapply(is.element, A, B)
   # replace original column in scr
   scr[[flag]] <- C
   # change column name if required
   if (!missing(newnwame)) {
+    if (!is.character(newname) || length(newname) != 1) stop('"newname" must be a character string')
     ind <- which(colnames(scr) == flag)
     colnames(scr)[ind] <- newname
   }

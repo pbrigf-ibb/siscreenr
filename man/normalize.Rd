@@ -42,7 +42,7 @@ There are three normalization methods available at the moment:
   }
   \item{
   \code{medpolish}: run Tukey's median polish and return residuals;
-                    calls \link{\code{stats::medpolish}}
+                    calls \code{stats::medpolish}
   }
 }
 }
@@ -52,7 +52,7 @@ There are three normalization methods available at the moment:
 and runs it on desired variables with \code{lapply},
 then \code{cbind}s the result to \code{x}
 
-\item \code{grouped_df}: see \code{\link{acutils::metamethod}}
+\item \code{grouped_df}: see \code{acutils::metamethod}
 }}
 
 \section{Warnings}{

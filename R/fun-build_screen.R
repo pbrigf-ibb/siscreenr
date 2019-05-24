@@ -159,7 +159,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # read and reformat additional information
   scr <- scr %>%
-    dplyr::rename(well = wells) %>%
+    dplyr::rename(well = wells) %>% # rename well id column
     tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
     dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
@@ -187,144 +187,9 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # reorder by plate number, replica number and well number
   if (verbose) cat('reordering... \n')
-  scr <- dplyr::arrange(scr, plate, replica, column, row)
+  scr <- dplyr::arrange(scr, plate, replica, plated, imaged, column, row)
 
   if (verbose) cat('\nready! \n')
   invisible(scr)
 }
 
-
-build_screen2 <- function(logfile, layout, datadir = './data/', rem.col,
-                         zero.to.NA = FALSE, wells = 'Index', verbose = TRUE) {
-  # check arguments
-  if (!file.exists(logfile)) stop('logfile not found')
-  if (!file.exists(layout)) stop('layout file not found')
-  if (!dir.exists(datadir)) stop('data directory not found')
-  if (!missing(rem.col)) {
-    if (!is.numeric(rem.col) & !is.character(rem.col)) {
-      stop ('"rem.col" must be either a numeric or a character vector')
-    }
-  }
-  # load log and layout and compare logged vs filed plates
-  if (verbose) cat('tallying plates... \n')
-  screenlog <- read.delim(logfile, stringsAsFactors = FALSE)
-
-  plates.logged <- screenlog[, 1]
-  if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
-  data.files <- list.files(path = datadir)
-  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1])
-
-  if (length(plates.filed) == 0) stop('no result files')
-  if (verbose) {
-    cat(length(plates.filed), 'result files found: \n')
-    print(cbind(sort(as.vector(plates.filed))))
-  }
-
-  # check for missing/excess result files
-  if (verbose && !setequal(plates.logged, plates.filed)) {
-    cat('\ndetected result files do not match the screen log\n')
-    plates.missing <- setdiff(plates.logged, plates.filed)
-    plates.excess <- setdiff(plates.filed, plates.logged)
-    cat(length(plates.missing), 'result files missing: \n')
-    print(cbind(sort(plates.missing)))
-    cat(length(plates.excess), 'excess result files: \n')
-    print(cbind(sort(plates.excess)))
-  }
-
-  # load layout
-  if (verbose) cat('loading layout(s)... \n')
-  lay <- read.delim(file = layout, stringsAsFactors = FALSE)
-  # check adjust format of the layout file
-  if (!is.numeric(lay$well)) stop('column "well" in layout file must be numeric')
-  lay.colnames <- names(lay)
-  if (!all(is.element(c('row', 'column'), lay.colnames))) {
-    if (!is.element('position', lay.colnames)) {
-      warning('it seems well position (row and column) is not defined in the layout file\nthis may cause problems down the line')
-    } else {
-      lay <- tidyr::separate(lay, col = 'position', sep = 1, into = c('row', 'column'),
-                             remove = F, convert = T)
-    }
-  }
-  if (is.element('date', lay.colnames) & !is.element('plated', lay.colnames)) {
-    names(lay)[lay.colnames == 'date'] <- 'plated'
-  }
-
-  # build screen as data frame
-  if (verbose) cat('building screen... \n')
-  plates <- names(plates.filed[plates.filed %in% plates.logged])
-  if (length(plates) == 0) stop('no result files to collate')
-
-  # define a function that will load and modify a result file
-  plate.loader <- function(x) {
-    filename <- paste0(datadir, '/', x)
-    plate.loaded <- read.delim(filename)
-    plate.loaded$filename <- x
-    return(plate.loaded)
-  }
-  # apply the function over the plate list
-  prescr <- lapply(plates, plate.loader)
-
-  if (verbose) cat('collating', length(plates), 'plates', '\n')
-  scr <- do.call(rbind, prescr)
-
-  # removing columns if desired
-  if (!missing(rem.col)) {
-    if (verbose) cat('removing columns... \n')
-    cols <- colnames(scr)
-    if (is.character(rem.col)) {
-      if (!all(rem.col %in% cols)) {
-        nec <- setdiff(rem.col, cols)
-        warning('request to remove non-existing column(s): ', nec,' was ignored',
-                call. = FALSE, immediate. = TRUE)
-      }
-      rem <- intersect(rem.col, colnames(scr))
-    } else {
-      if (0 %in% rem.col) rem.col[rem.col == 0] <- length(cols) - 1
-      rem <- cols[rem.col]
-    }
-    scr <- dplyr::select(scr, -rem)
-  }
-
-  # read and reformat additional information
-  scr <- scr %>%
-    dplyr::rename(well = wells) %>%
-    tidyr::separate('filename', c('plateno','extension'), sep = 21) %>%
-    dplyr::right_join(screenlog, .,  by = 'plateno') %>%
-    tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica')) %>%
-    tidyr::separate('replica', c('plate_type', 'number'), sep = 1, remove = FALSE) %>%
-    dplyr::mutate('plate' = gsub('[A-Z]', '', plate), 'plate' = as.numeric(plate),
-                  'replica' = gsub('R', 'rep', replica),
-                  'replica' = gsub('C', 'con', replica),
-                  'replica' = gsub('P', 'pos', replica),
-                  'replica' = gsub('N', 'neg', replica),
-                  'replica' = gsub('A', 'act', replica)) %>%
-    dplyr::mutate('plate_type' = gsub('R', 'test', plate_type),
-                  'plate_type' = gsub('C', 'control', plate_type),
-                  'plate_type' = gsub('P', 'positive', plate_type),
-                  'plate_type' = gsub('N', 'negative', plate_type),
-                  'plate_type' = gsub('A', 'actinonin', plate_type)) %>%
-    dplyr::full_join(lay, .) %>%
-    dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
-    dplyr::select(-'extension', -'number')
-
-  # change zeros to NAs if required
-  if (zero.to.NA) {
-    if (verbose) cat('replacing zeros... \n')
-    na.count.before <- sum(is.na(scr))
-    zero.count <- sum(scr == 0, na.rm = TRUE)
-    scr[scr == 0] <- NA
-    na.count.after <- sum(is.na(scr))
-    if (verbose) {
-      cat(' ', na.count.before, 'NAs identified \n')
-      cat(' ', zero.count, 'zeros found and replaced in total \n')
-      cat(' ', na.count.after, 'NAs now present \n')
-    }
-  }
-
-  # reorder by plate number, replica number and well number
-  if (verbose) cat('reordering... \n')
-  scr <- dplyr::arrange(scr, plate, replica, column, row)
-
-  if (verbose) cat('\nready! \n')
-  invisible(scr)
-}

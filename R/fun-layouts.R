@@ -35,10 +35,6 @@
 #'
 #' @return if \code{file} is missing, the collated layout table, otherwise nothing
 #'
-#' @importFrom magrittr %>%
-#' @importFrom utils read.delim
-#' @importFrom utils write.table
-#'
 
 layouts <- function(..., file) {
   # change global option and clean up afterwards
@@ -51,23 +47,24 @@ layouts <- function(..., file) {
     warning('some files are missing and will be omitted')
     files <- files[file.exists(files)]
   }
+  if (length(files) == 0) stop('no existing files defined')
 
   # define function that will load single file and process it accordingly
   process_layout <- function(x) {
-    X <- read.delim(x)
+    X <- utils::read.delim(x)
     if (!is.element('plate_type', names(X))) {
       X_name_split <- unlist(strsplit(x, '_|\\.'))
       X$plate_type <- X_name_split[length(X_name_split) - 1]
     }
-    X %>%
-      tidyr::gather('plated', 'well_type', dplyr::matches('[0-9]{8}')) %>%
-      dplyr::mutate('plated' = gsub('^X', '', plated))
+    y <- tidyr::gather(X, 'plated', 'well_type', dplyr::matches('[0-9]{8}'))
+    y$plated <- gsub('^X', '', y$plated)
+    return(y)
   }
 
   # apply the function over all requested files
   L <- do.call(rbind, lapply(files, process_layout))
 
-  if (missing(file)) return(L) else write.table(L, file, quote = F, sep = '\t', row.names = F)
+  if (missing(file)) return(L) else utils::write.table(L, file, quote = F, sep = '\t', row.names = F)
 }
 
 #' @examples
