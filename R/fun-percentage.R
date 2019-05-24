@@ -16,7 +16,7 @@
 #' \code{positive} and \code{negative} predicates on.
 #'
 #' @param x a data frame
-#' @param variable column to process
+#' @param variables column to process
 #' @param positive logical predicate to define positive control observations
 #'                 (max inhibition); bare or string
 #' @param negative logical predicate to define negative control observations
@@ -86,7 +86,7 @@ percentage.data.frame <- function(x, variables, positive, negative,
 }
 
 #' @export
-#' @describeIn percentage see \code{\link{acutils::metamethod}}
+#' @describeIn percentage see \code{acutils::metamethod}
 percentage.grouped_df <- acutils::metamethod(percentage.data.frame)
 
 # x <- data.frame(well = rep(1:300, 2),

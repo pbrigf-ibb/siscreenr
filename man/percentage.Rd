@@ -18,6 +18,8 @@ percentage(x, variables, positive, negative, inhact = c("inhibition",
 \arguments{
 \item{x}{a data frame}
 
+\item{variables}{column to process}
+
 \item{positive}{logical predicate to define positive control observations
 (max inhibition); bare or string}
 
@@ -26,8 +28,6 @@ percentage(x, variables, positive, negative, inhact = c("inhibition",
 
 \item{inhact}{character that decides whether to calculate
 normalized percent inhibition or normalized percent activation}
-
-\item{variable}{column to process}
 }
 \value{
 a modified \code{data.frame}
@@ -45,7 +45,7 @@ This is a method of data normalization in a high throughput screening campaign.
 runs function for NPI or NPA over desired variables with \code{lapply},
 then \code{cbind}s the result to \code{x}
 
-\item \code{grouped_df}: see \code{\link{acutils::metamethod}}
+\item \code{grouped_df}: see \code{acutils::metamethod}
 }}
 
 \section{Grouped data frames (\code{dplyr} package)}{
