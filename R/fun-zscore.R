@@ -20,8 +20,9 @@
 #'                  for the data frame method, a logical vector
 #'                  or any predicate (bare or as string) that refers to \code{x}'s variables
 #' @param variables for data frame method, character vector of variables to standardize
+#' @param ... arguments passed to methods
 #'
-#' @return a numeric vector of z scores
+#' @return a numeric vector of z scores or a data frame with added columns of z scores
 #'
 #' @section Deviations:
 #' Data is accepted as raw or normalized and the function can be informed of this with a logical flag.
@@ -49,9 +50,9 @@ zscore.default <- function(x, robust = TRUE, deviations = FALSE, reference, ...)
   ref <-
     if (missing(reference)) {
       x
-    } else {
+    } else if (any(reference)) {
       x[reference]
-    }
+    } else x
   loc <-
     if (deviations) {
       0
@@ -86,12 +87,13 @@ zscore.data.frame <- function(x, robust = TRUE, deviations = FALSE, reference, v
     if (!all(vapply(x[variables], is.numeric, logical(1)))) stop('non-numeric variables selected')
   }
   # get reference as logical vector
-  Reference <-
-    if (is.logical(reference)) reference else
-      if (is.call(reference)) eval(reference, x) else
-        if (is.character(reference)) eval(substitute(eval(parse(text = reference))), x)
+  if (!missing(reference)) {
+    r <- substitute(reference)
+    r <- if (is.call(r) | is.name(r)) r else if (is.character(r)) substitute(eval(parse(text = r)))
+    Reference <- eval(r, x)
+  } else Reference <- logical(nrow(x))
   # get arguments from original call
-  arguments <- as.list(match.call())
+  arguments <- list(robust = robust, deviations = deviations)
   # compute z scores
   y <- lapply(x[variables],
               function(x) zscore.default(x,
@@ -106,7 +108,7 @@ zscore.data.frame <- function(x, robust = TRUE, deviations = FALSE, reference, v
 }
 
 #' @export
-#' @describeIn zscore see \link{\code{acutils::metamethod}}
+#' @describeIn zscore see \code{\link[acutils]{metamethod}}
 zscore.grouped_df <- acutils::metamethod(zscore.data.frame)
 
 #' @examples

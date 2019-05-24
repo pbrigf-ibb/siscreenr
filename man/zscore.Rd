@@ -21,6 +21,8 @@ zscore(x, ...)
 \arguments{
 \item{x}{a numeric vector}
 
+\item{...}{arguments passed to methods}
+
 \item{robust}{logical flag whether to calculate normal or robust z scores}
 
 \item{deviations}{logical flag whether the supplied data is raw or normalized}
@@ -33,7 +35,7 @@ or any predicate (bare or as string) that refers to \code{x}'s variables}
 \item{variables}{for data frame method, character vector of variables to standardize}
 }
 \value{
-a numeric vector of z scores
+a numeric vector of z scores or a data frame with added columns of z scores
 }
 \description{
 Given a numeric vector, convert the numbers to z scores or robust z scores.
@@ -55,7 +57,7 @@ respectively.
 
 \item \code{data.frame}: calculates zscores for requested variables in a data frame
 
-\item \code{grouped_df}: see \link{\code{acutils::metamethod}}
+\item \code{grouped_df}: see \code{\link[acutils]{metamethod}}
 }}
 
 \section{Deviations}{
