@@ -52,7 +52,7 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
 
   if (!missing(infile) && !file.exists(infile)) stop('"infile" not found')
   # for subsetting
-  if (!missing(part)) part <- match.arg('part')
+  if (!missing(part)) part <- match.arg('part', several.ok = TRUE)
   if (!missing(plates) && any(plates > 38)) stop('invalid plate selection')
   if (!missing(plates) && !is.numeric(plates)) stop('"plates" must be a numeric vector')
   if (missing(plates)) plates <- 1:38
