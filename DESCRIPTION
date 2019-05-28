@@ -23,6 +23,5 @@ Imports:
     data.table (>= 1.12.2),
     lubridate (>= 1.7.4),
     acutils (>= 0.1.0),
-    reutils (>= 0.2.3),
-    tidyselect (>= 0.2.5)
+    reutils (>= 0.2.3)
 RoxygenNote: 6.1.1

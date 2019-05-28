@@ -54,6 +54,7 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
   # for subsetting
   if (!missing(part)) part <- match.arg('part')
   if (!missing(plates) && any(plates > 38)) stop('invalid plate selection')
+  if (!missing(plates) && !is.numeric(plates)) stop('"plates" must be a numeric vector')
   if (missing(plates)) plates <- 1:38
   plates <- paste('Plate', plates)
 
@@ -66,15 +67,16 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
       data.table::fread(file = infile)
     }
   # filter subsets
-  annotation_original <- dplyr::filter(annotation_original,
-                                       is.element(Plate, plates),
-                                       is.element(Subset, part))
+  annotation_original <- annotation_original %>%
+    dplyr::filter(is.element(.$Plate, plates), is.element(.$Subset, part))
   if (nrow(annotation_original) == 0) stop('no plates in the subset')
 
   annotation_original$GENEID <- as.character(annotation_original$GENEID)
   # extract original geneIDs
-  geneids <- as.numeric(unique(annotation_original$GENEID))
-  geneids <- geneids[!is.na(geneids)]
+  suppressWarnings({
+    geneids <- as.numeric(unique(annotation_original$GENEID))
+    geneids <- geneids[!is.na(geneids)]
+  })
   # check geneID status
   if (verbose) message('checking geneID status')
   if (verbose) double_check <- check_geneids(geneids) else
@@ -87,8 +89,10 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
                                       annotation_checked$old_geneid,
                                       annotation_checked$new_geneid)
   # extract new geneIDs
-  geneids <- as.numeric(unique(annotation_checked$GENEID))
-  geneids <- geneids[!is.na(geneids)]
+  suppressWarnings({
+    geneids <- as.numeric(unique(annotation_checked$GENEID))
+    geneids <- geneids[!is.na(geneids)]
+  })
   # get gene fields for all new geneIDs
   if (verbose) message('getting locus info...')
   fields <- get_gene_fields_batch(geneids)
