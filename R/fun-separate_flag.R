@@ -61,9 +61,11 @@ separate_flag <- function(scr, flag = 'wells_rescanned', newname,
   scr[[flag]] <- C
   # change column name if required
   if (!missing(newnwame)) {
-    if (!is.character(newname) || length(newname) != 1) stop('"newname" must be a character string')
-    ind <- which(colnames(scr) == flag)
-    colnames(scr)[ind] <- newname
+    if (!is.character(newname) || length(newname) != 1) {
+      stop('"newname" must be a character string')
+    }
+      ind <- which(colnames(scr) == flag)
+      colnames(scr)[ind] <- newname
   }
   return(scr)
 }

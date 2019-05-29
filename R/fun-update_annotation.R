@@ -113,7 +113,7 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
     dplyr::mutate(sequences = paste(.$sequence, collapse = ', '),
                   duplex_catalog_numbers = paste(.$duplex_catalog_number, collapse = ', ')) %>%
     dplyr::ungroup() %>%
-    dplyr::select(tidyselect::one_of(
+    dplyr::select(dplyr::one_of(
       c('plate', 'position', 'geneid', 'ginumber', 'gene_accession', 'gene_symbol',
         'aliases', 'description', 'map_location', 'chromosome',
         'sequences', 'duplex_catalog_numbers', 'pool_catalog_number',
