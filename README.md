@@ -10,5 +10,7 @@ Hadley Wickham's Advanced R (cit).
 Patrick Burns's The R inferno (cit).
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 This is a work in progress, many faults are expected.
+
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
