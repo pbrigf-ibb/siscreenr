@@ -159,14 +159,15 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # read and reformat additional information
   scr <- scr %>%
-    dplyr::rename(well = wells) %>% # rename well id column
+    dplyr::rename('well' = wells) %>% # rename well id column
     tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
     dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1) %>%
-    dplyr::mutate(plate = gsub('[A-Z]', '', plate), plate = as.numeric(plate)) %>%
+    dplyr::mutate(plate = gsub('[A-Z]', '', .$plate)) %>%
+    dplyr::mutate(plate = as.numeric(.$plate)) %>%
     plate.type.converter() %>%
-    tidyr::unite(replica, replica, number, sep = '') %>%
+    tidyr::unite('replica', 'replica', 'number', sep = '') %>%
     dplyr::full_join(lay, .) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension')
@@ -187,7 +188,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # reorder by plate number, replica number and well number
   if (verbose) cat('reordering... \n')
-  scr <- dplyr::arrange(scr, plate, replica, plated, imaged, column, row)
+  scr <- scr %>% dplyr::arrange(.$plate, .$replica, .$plated, .$imaged, .$column, .$row)
 
   if (verbose) cat('\nready! \n')
   invisible(scr)
