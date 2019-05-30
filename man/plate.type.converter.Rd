@@ -29,3 +29,4 @@ the \code{key} argument. Be careful to keep to the format of the default file.
 
 To view or edit the dictionary file find it with \code{path.package('siscreenr')}.
 }
+\keyword{internal}

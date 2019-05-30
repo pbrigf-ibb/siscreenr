@@ -45,6 +45,8 @@
 #' @return a \code{data frame} where the flag variable was converted from
 #'         string to logical and optionally renamed
 #'
+#' @export
+#'
 
 separate_flag <- function(scr, flag = 'wells_rescanned', newname,
                           sep = ', ', well.ID = 'position') {

@@ -19,7 +19,8 @@
 #' @return Nothing. A plot is printed if \code{file} is missing,
 #' otherwise a 600x800 px png file is created in \code{directory}.
 #'
-
+#' @export
+#'
 
 plot_screen_progress <- function(directory, file) {
   # check for directory

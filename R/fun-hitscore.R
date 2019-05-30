@@ -21,6 +21,7 @@
 #'
 #' @return a vector of hit statuses represented as integers: 1, -1 or 0
 #'
+#' @export
 
 hitscore <- function(x, treshold = 2) {
   if (!is.numeric(x)) stop('"x" must be numeric')

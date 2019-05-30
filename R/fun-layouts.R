@@ -35,6 +35,8 @@
 #'
 #' @return if \code{file} is missing, the collated layout table, otherwise nothing
 #'
+#' @export
+#'
 
 layouts <- function(..., file) {
   # change global option and clean up afterwards

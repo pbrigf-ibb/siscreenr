@@ -46,6 +46,9 @@
 #'
 #' @return The function either invisibly returns the updated annotation
 #'         or saves to a specified path and returns nothing.
+#'
+#' @export
+#'
 
 update_annotation <- function(infile, path, verbose = FALSE, plates,
     part = c('Human Genome', 'Human Drug Targets', 'Human Druggable Subset')) {

@@ -18,6 +18,8 @@
 #'
 #' @return screen object in which columns "plate_type" and "replica" are altered
 #'
+#' @keywords internal
+#'
 
 plate.type.converter <- function(x, key) {
   if (missing(key)) key <- paste0(path.package('siscreenr'), '/extdata/plate.type.converter.key.txt')

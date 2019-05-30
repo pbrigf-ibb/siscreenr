@@ -37,6 +37,7 @@
 #' supply a logical vector (or predicate that will be evaluated
 #' within the data frame) to determine the reference subpopulation.
 #'
+#' @export
 
 zscore <- function(x, ...) {
   UseMethod('zscore')

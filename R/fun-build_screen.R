@@ -63,7 +63,7 @@
 #' this may cause problems if not all wells are scanned.
 #' Also we load layout and annotation separately, the column is redundant anyway.
 #'
-#' @importFrom utils read.delim
+#' @export
 #'
 
 build_screen <- function(logfile, layout, datadir = './data/', rem.col,
@@ -79,7 +79,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   }
   # load log and layout and compare logged vs filed plates
   if (verbose) cat('tallying plates... \n')
-  screenlog <- read.delim(logfile, stringsAsFactors = FALSE)
+  screenlog <- utils::read.delim(logfile, stringsAsFactors = FALSE)
 
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
@@ -105,7 +105,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # load layout
   if (verbose) cat('loading layout(s)... \n')
-  lay <- read.delim(file = layout, stringsAsFactors = FALSE)
+  lay <- utils::read.delim(file = layout, stringsAsFactors = FALSE)
   # check adjust format of the layout file
   if (!is.numeric(lay$well)) stop('column "well" in layout file must be numeric')
   lay.colnames <- names(lay)
@@ -129,7 +129,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   # define a function that will load and modify a result file
   plate.loader <- function(x) {
     filename <- paste0(datadir, '/', x)
-    plate.loaded <- read.delim(filename)
+    plate.loaded <- utils::read.delim(filename)
     plate.loaded$filename <- x
     return(plate.loaded)
   }
