@@ -108,8 +108,8 @@ zscore.data.frame <- function(x, robust = TRUE, deviations = FALSE, reference, v
 }
 
 #' @export
-#' @describeIn zscore see \code{\link[acutils]{metamethod}}
-zscore.grouped_df <- acutils::metamethod(zscore.data.frame)
+#' @describeIn zscore see \code{\link[metamethods]{data.frame__to__grouped_df}}
+zscore.grouped_df <- metamethods::data.frame__to__grouped_df(zscore.data.frame)
 
 #' @examples
 #' a <- rnorm(1000, 55, 3)

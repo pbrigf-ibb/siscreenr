@@ -86,8 +86,8 @@ percentage.data.frame <- function(x, variables, positive, negative,
 }
 
 #' @export
-#' @describeIn percentage see \code{acutils::metamethod}
-percentage.grouped_df <- acutils::metamethod(percentage.data.frame)
+#' @describeIn percentage see \code{\link[metamethods]{data.frame__to__grouped_df}}
+percentage.grouped_df <- metamethods::data.frame__to__grouped_df(percentage.data.frame)
 
 # x <- data.frame(well = rep(1:300, 2),
 #                 class = c(rep('low', 100), rep('high', 100), rep('mid', 100)),

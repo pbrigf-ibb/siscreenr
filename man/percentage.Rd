@@ -45,7 +45,7 @@ This is a method of data normalization in a high throughput screening campaign.
 runs function for NPI or NPA over desired variables with \code{lapply},
 then \code{cbind}s the result to \code{x}
 
-\item \code{grouped_df}: see \code{acutils::metamethod}
+\item \code{grouped_df}: see \code{\link[metamethods]{data.frame__to__grouped_df}}
 }}
 
 \section{Grouped data frames (\code{dplyr} package)}{

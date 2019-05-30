@@ -57,7 +57,7 @@ respectively.
 
 \item \code{data.frame}: calculates zscores for requested variables in a data frame
 
-\item \code{grouped_df}: see \code{\link[acutils]{metamethod}}
+\item \code{grouped_df}: see \code{\link[metamethods]{data.frame__to__grouped_df}}
 }}
 
 \section{Deviations}{

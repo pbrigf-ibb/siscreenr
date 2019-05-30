@@ -114,6 +114,6 @@ normalize.data.frame <- function(x, variables, method = c('median', 'mean', 'med
 }
 
 #' @export
-#' @describeIn normalize see \code{acutils::metamethod}
-normalize.grouped_df <- acutils::metamethod(normalize.data.frame)
+#' @describeIn normalize see \code{\link[metamethods]{data.frame__to__grouped_df}}
+normalize.grouped_df <- metamethods::data.frame__to__grouped_df(normalize.data.frame)
 

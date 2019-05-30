@@ -52,7 +52,7 @@ There are three normalization methods available at the moment:
 and runs it on desired variables with \code{lapply},
 then \code{cbind}s the result to \code{x}
 
-\item \code{grouped_df}: see \code{acutils::metamethod}
+\item \code{grouped_df}: see \code{\link[metamethods]{data.frame__to__grouped_df}}
 }}
 
 \section{Warnings}{
