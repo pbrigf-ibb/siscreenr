@@ -3,11 +3,19 @@
 #' Calculate normalized percent inhibition (NPI) or activation (NPA)
 #' for variable(s) in a data frame.
 #'
+#' NPI is the extent to which the signal of interest is diminished compared to a positive control:
+#'
+#' \code{NPI = (Neg - x) / (Neg - Pos) * 100\%}
+#'
+#' NPA is the extent to which the signal is activated compared to a positive control:
+#'
+#' \code{NPA = (x - Neg) / (Pos - Neg) * 100\%}
+#'
 #' This is a method of data normalization in a high throughput screening campaign.
 #'
 #' @section Grouped data frames (\code{dplyr} package):
-#' The method for class \code{grouped_df} is home brewed as I don't know
-#' how to properly handle this class.
+#' Since I don't know how to properly program for class \code{grouped_df},
+#' its method is involves a workaround.
 #'
 #' @section Grouping variables:
 #' Grouped data frames (class \code{grouped_df}) may cause problems
