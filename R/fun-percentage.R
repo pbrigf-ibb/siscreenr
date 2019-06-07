@@ -21,7 +21,7 @@
 #'                 (max inhibition); bare or string
 #' @param negative logical predicate to define negative control observations
 #'                 (no inhibition); bare or string
-#' @param inhact character that decides whether to calculate
+#' @param mode character that decides whether to calculate
 #'               normalized percent inhibition or normalized percent activation
 #'
 #' @return a modified \code{data.frame}
@@ -30,7 +30,7 @@
 #'
 
 percentage <- function(x, variables, positive, negative,
-                       inhact = c('inhibition', 'activation')) {
+                       mode = c('inhibition', 'activation')) {
   UseMethod('percentage')
 }
 
@@ -40,7 +40,7 @@ percentage <- function(x, variables, positive, negative,
 #' runs function for NPI or NPA over desired variables with \code{lapply},
 #' then \code{cbind}s the result to \code{x}
 percentage.data.frame <- function(x, variables, positive, negative,
-                       inhact = c('inhibition', 'activation')) {
+                       mode = c('inhibition', 'activation')) {
   # check arguments
   if (!is.data.frame(x)) stop('x must be a data frame')
   if (missing(variables)) {
@@ -58,7 +58,7 @@ percentage.data.frame <- function(x, variables, positive, negative,
   pos <- if (is.call(pos)) pos else if (is.character(pos)) substitute(eval(parse(text = pos)))
   neg <- if (is.call(neg)) neg else if (is.character(neg)) substitute(eval(parse(text = neg)))
   # capture inhibition/activation
-  method <- match.arg(inhact)
+  method <- match.arg(mode)
   # determine positive/negative controls
   negatives <- eval(neg, x)
   positives <- eval(pos, x)
@@ -75,12 +75,12 @@ percentage.data.frame <- function(x, variables, positive, negative,
                   N <- mean(x[negatives], na.rm = T)
                   (x  - N) / (P - N)
                 },
-                stop('invalid value of "inhact"'))
+                stop('invalid value of "mode"'))
   y <- lapply(x[variables], fff)
   # rename columns accordingly
   names(y) <- switch(method,
                      'inhibition' = paste0(variables, '_npi'),
-                     'activation' = paste0(variables, '_act'))
+                     'activation' = paste0(variables, '_npa'))
   # add new variables and return
   cbind(x, as.data.frame(y))
 }

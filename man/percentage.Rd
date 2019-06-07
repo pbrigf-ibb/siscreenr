@@ -6,14 +6,14 @@
 \alias{percentage.grouped_df}
 \title{normalized percent inhibition/activation}
 \usage{
-percentage(x, variables, positive, negative, inhact = c("inhibition",
+percentage(x, variables, positive, negative, mode = c("inhibition",
   "activation"))
 
 \method{percentage}{data.frame}(x, variables, positive, negative,
-  inhact = c("inhibition", "activation"))
+  mode = c("inhibition", "activation"))
 
 \method{percentage}{grouped_df}(x, variables, positive, negative,
-  inhact = c("inhibition", "activation"))
+  mode = c("inhibition", "activation"))
 }
 \arguments{
 \item{x}{a data frame}
@@ -26,7 +26,7 @@ percentage(x, variables, positive, negative, inhact = c("inhibition",
 \item{negative}{logical predicate to define negative control observations
 (no inhibition); bare or string}
 
-\item{inhact}{character that decides whether to calculate
+\item{mode}{character that decides whether to calculate
 normalized percent inhibition or normalized percent activation}
 }
 \value{
