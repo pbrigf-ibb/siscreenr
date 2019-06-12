@@ -25,5 +25,6 @@ Imports:
     acutils (>= 0.1.0),
     reutils (>= 0.2.3),
     metamethods (>= 0.1.4)
+Remotes: olobiolo/metamethods
 RoxygenNote: 6.1.1
 URL: http://github.com/olobiolo/siscreenr
