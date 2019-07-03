@@ -33,7 +33,7 @@ insert_zeros.character <- function(x, zeros = 'auto', after = 1) {
     print('waste of time...')
     return(x)
   }
-  if (after < 1) stop('"after" is named "after for a reason')
+  if (after < 0) stop('"after" must not be lower than 0')
   if (after > min(nchar(x), na.rm = TRUE)) stop('some items are too short; "after" too large')
 
   nchar.max <- max(nchar(x), na.rm = TRUE)
@@ -48,10 +48,18 @@ insert_zeros.character <- function(x, zeros = 'auto', after = 1) {
     return(paste(rep('0', n), collapse = ''))
   }
   # create function that inserts the string of zeros to the target string
-  paster <- function(x) {
-    if (is.na(x)) return(x) else
-    paste0(substr(x, 1, after), paste(zero_string(x, zeros), collapse = ''), substr(x, after + 1, nchar(x)))
+  if (after == 0) {
+    paster <- function(x) {
+      if (is.na(x)) return(x) else
+        paste0(paste(zero_string(x, zeros), collapse = ''), x)
+    }
+  } else {
+    paster <- function(x) {
+      if (is.na(x)) return(x) else
+        paste0(substr(x, 1, after), paste(zero_string(x, zeros), collapse = ''), substr(x, after + 1, nchar(x)))
+    }
   }
+
   # apply over X
   vapply(x, paster, USE.NAMES = FALSE, FUN.VALUE = character(1))
 }
@@ -88,5 +96,6 @@ insert_zeros.default <- function(x) {
 #' rbind("original" = v,
 #'       "auto" = insert_zeros(v),
 #'       "force 1 zero" = insert_zeros(v, 1),
-#'       "force after 2nd char" = insert_zeros(v, after = 2))
+#'       "force after 2nd char" = insert_zeros(v, after = 2),
+#'       "force at beginning" = insert_zeros(v, after = 0))
 #'
