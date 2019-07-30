@@ -22,7 +22,7 @@ get_gene_fields_batch(geneIDs)
 }
 \arguments{
 \item{infile}{file containing the original annotation;
-must be compatible with \code{data.table::fread};
+must be compatible with \code{[data.table]{fread}};
 deafults to internally sotred Dharmacon annotation from 16th May 2015}
 
 \item{path}{(optional) path to directory where to save the updated annotation}

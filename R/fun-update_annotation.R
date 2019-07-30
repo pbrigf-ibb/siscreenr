@@ -37,7 +37,7 @@
 #' to save time.
 #'
 #' @param infile file containing the original annotation;
-#'               must be compatible with \code{data.table::fread};
+#'               must be compatible with \code{[data.table]{fread}};
 #'               deafults to internally sotred Dharmacon annotation from 16th May 2015
 #' @param path (optional) path to directory where to save the updated annotation
 #' @param verbose print function progeress as messages or not
@@ -63,21 +63,45 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
 
   # load original annotation
   if (verbose) message('loading annotation')
-  annotation_original <-
-    if (missing(infile)) {
-      data.table::fread('extdata/ANNOTATION.LIBRARY.GENOMIC_20150416.original.txt')
-    } else {
-      data.table::fread(file = infile)
-    }
+  if (missing(infile)) infile <- 'extdata/ANNOTATION.LIBRARY.GENOMIC_20150416.original.txt'
+  annotation_original <- data.table::fread(file = infile)
+
+  # change column names to lower case
+  nms <- tolower(names(annotation_original))
+
+  ### provisions for making this function work for any annotation format
+  # define a function
+  replacer <- function(x, string, replacement, error, error2) {
+    ind <- grep(string, x)
+    if (length(ind) == 1) x[ind] <- replacement else
+      if (length(ind) == 0) stop(error, call. = FALSE) else
+        stop(error2, call. = FALSE)
+  }
+  # create vectors of regexs, replacements, and error messages
+  strings <- c('wells?', 'gene[-,_,\\., ]symbols?', 'gene[-,_,\\., ]ids?', 'subsets?')
+  replacements <- c('position', 'genesymbol', 'geneid', 'subset')
+  errors <- paste('"data" contains no apparent specification of',
+                  c('position', 'gene symbols', 'gene ids', 'library subsets'))
+  errors2 <- paste('"data" contains unambiguous specification of',
+                   c('position', 'gene symbols', 'gene ids', 'library subsets'))
+  # run the function across the column names
+  nms <-
+    as.vector(mapply(FUN = replacer,
+                     string = strings, replacement = replacements, error = errors, error2 = errors2,
+                     MoreArgs = list(x = nms), SIMPLIFY = TRUE))
+  # replace column names
+  names(annotation_original) <- nms
+  ### required column names are now present
+
   # filter subsets
-  annotation_original <- annotation_original %>%
-    dplyr::filter(is.element(.$Plate, plates), is.element(.$Subset, part))
+  ind <- is.element(annotation_original$plate, plates) & is.element(annotation_original$subset, part)
+  annotation_original <- annotation_original[ind, , drop = FALSE]
   if (nrow(annotation_original) == 0) stop('no plates in the subset')
 
-  annotation_original$GENEID <- as.character(annotation_original$GENEID)
+  annotation_original$geneid <- as.character(annotation_original$geneid)
   # extract original geneIDs
   suppressWarnings({
-    geneids <- as.numeric(unique(annotation_original$GENEID))
+    geneids <- as.numeric(unique(annotation_original$geneid))
     geneids <- geneids[!is.na(geneids)]
   })
   # check geneID status
@@ -86,14 +110,15 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
     suppressMessages(double_check <- check_geneids(geneids))
   # add geneID status to annotation and amend geneIDs
   annotation_checked <-
-    dplyr::full_join(annotation_original, double_check, by = c('GENEID' = 'geneid'))
-  annotation_checked$old_geneid <- annotation_checked$GENEID
-  annotation_checked$GENEID <- ifelse(is.na(annotation_checked$new_geneid),
+    #dplyr::full_join(annotation_original, double_check, by = c('GENEID' = 'geneid'))
+    data.table::merge(annotation_original, double_check, by = 'geneid', all = TRUE)
+  annotation_checked$old_geneid <- annotation_checked$geneid
+  annotation_checked$geneid <- ifelse(is.na(annotation_checked$new_geneid),
                                       annotation_checked$old_geneid,
                                       annotation_checked$new_geneid)
   # extract new geneIDs
   suppressWarnings({
-    geneids <- as.numeric(unique(annotation_checked$GENEID))
+    geneids <- as.numeric(unique(annotation_checked$geneid))
     geneids <- geneids[!is.na(geneids)]
   })
   # get gene fields for all new geneIDs
@@ -101,13 +126,14 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
   fields <- get_gene_fields_batch(geneids)
   # append fields to amended annotation
   if (verbose) message('appending to annotation')
-  annotations_joined <- dplyr::full_join(annotation_checked, fields, by = 'GENEID')
+  #annotations_joined <- dplyr::full_join(annotation_checked, fields, by = 'geneid')
+  annotations_merged <- data.table::merge(annotation_checked, fields, by = 'geneid')
   # update annotation
   if (verbose) message('updating annotation')
-  annotation_updated <- annotations_joined %>%
+  annotation_updated <- #annotations_joined %>%
+    annotations_merged %>%
     stats::setNames(tolower(names(.))) %>%
-    dplyr::rename('position' = 'well',
-                  'old_gene_symbol' = 'genesymbol',
+    dplyr::rename('old_gene_symbol' = 'genesymbol',
                   'duplex_catalog_number' = 'duplexcatalognumber',
                   'pool_catalog_number' = 'poolcatalognumber',
                   'gene_accession' = 'geneaccession') %>%
@@ -135,8 +161,8 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
     invisible(annotation_updated)
   } else {
     if (verbose) message('saving file')
-    filename <- paste0(path, '/', 'ANNOTATION.LIBRARY.GENOMIC_', Sys.Date() %>% gsub('-', '', .),'.txt')
-    utils::write.table(annotation_updated, file = filename, quote = F, row.names = F, sep = '\t')
+    filename <- paste0(path, '/', 'ANNOTATION.LIBRARY.GENOMIC_', gsub('-', '', Sys.Date()),'.txt')
+    data.table::fwrite(annotation_updated, file = filename, sep = '\t')
     if (verbose) message('done!')
   }
 }
@@ -191,9 +217,9 @@ check_geneids <- function(geneIDs) {
   a <- vapply(geneIDs, check_geneid_status_with_pause, character(4)) %>%
     t %>% data.frame(stringsAsFactors = FALSE) %>%
     dplyr::mutate_at(2:3, as.logical) %>%
-    tidyr::separate('replaced', c('replaced', 'new_geneid'), sep = 'ID: ') %>%
-    dplyr::mutate(replaced = ifelse(is.na(.$replaced), FALSE, TRUE),
-                  new_geneid = as.numeric(.$new_geneid))
+    tidyr::separate('replaced', c('replaced', 'new_geneid'), sep = 'ID: ')
+  a$replaced <- ifelse(is.na(a$replaced), FALSE, TRUE)
+  a$new_geneid <- as.numeric(a$new_geneid)
   return(a)
 }
 
@@ -221,7 +247,7 @@ get_gene_fields <- function(geneIDs) {
   aliases <- split_text[seq(from = 2, to = length(split_text), by = 2)]
   return(
     data.frame(
-      GENEID = as.character(geneIDs), gene_symbol, description, map_location, chromosome, aliases,
+      geneid = as.character(geneIDs), gene_symbol, description, map_location, chromosome, aliases,
       stringsAsFactors = F))
 }
 

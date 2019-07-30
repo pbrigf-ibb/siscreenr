@@ -161,14 +161,16 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   scr <- scr %>%
     dplyr::rename('well' = wells) %>% # rename well id column
     tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
-    dplyr::right_join(screenlog, .,  by = 'plateno') %>%
+    #dplyr::right_join(screenlog, .,  by = 'plateno') %>%
+    data.table::merge(screenlog, ., by = 'plateno', all.x = FALSE, all.y = TRUE) %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1) %>%
     dplyr::mutate(plate = gsub('[A-Z]', '', .$plate)) %>%
     dplyr::mutate(plate = as.numeric(.$plate)) %>%
     plate.type.converter() %>%
     tidyr::unite('replica', 'replica', 'number', sep = '') %>%
-    dplyr::full_join(lay, .) %>%
+    #dplyr::full_join(lay, .) %>%
+    data.table::merge(lay, ., all = TRUE) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension')
 
