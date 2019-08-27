@@ -27,6 +27,10 @@ drawmeabarplot <- function(data, highlight, treshold = 2) {
   if (length(HIGHLIGHT) == 0) stop('\"highlight\" does not match any columns')
   if (length(HIGHLIGHT) > 1) stop('\"highlight\" matches more than one column')
 
+  # prepare data
+  data <- data[order(data$mean_zscore_gf), ]
+  data$ID <- 1:nrow(data)
+  filtered <- data[data[[HIGHLIGHT]], ]
   # prepare plot title; some reformatting for specific cases
   title <-
     if (HIGHLIGHT == 'SPLICING') {"Genes involved in mRNA splicing"
@@ -38,10 +42,6 @@ drawmeabarplot <- function(data, highlight, treshold = 2) {
       }
       paste(HIGHLIGHT, 'complex genes')
     }
-  # prepare data
-  data <- data[order(data$mean_zscore_gf), ]
-  data$ID <- 1:nrow(data)
-  filtered <- data[data[[HIGHLIGHT]], ]
   # produce plot
   ggplot2::ggplot(data, ggplot2::aes(x = ID, y = mean_zscore_gf)) +
     ggplot2::theme_classic() +
