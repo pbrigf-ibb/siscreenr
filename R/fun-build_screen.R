@@ -84,7 +84,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
   data.files <- list.files(path = datadir)
-  plates.filed <- gsub('_\\.txt$', '', data.files)
+  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_?\\.txt')[[1]][1])
 
   if (length(plates.filed) == 0) stop('no result files')
   if (verbose) {
