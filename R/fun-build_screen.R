@@ -84,7 +84,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
   data.files <- list.files(path = datadir)
-  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1])
+  plates.filed <- gsub('_\\.txt$', '', data.files)
 
   if (length(plates.filed) == 0) stop('no result files')
   if (verbose) {
@@ -162,7 +162,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     dplyr::rename('well' = wells) %>% # rename well id column
     tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
     #dplyr::right_join(screenlog, .,  by = 'plateno') %>%
-    data.table::merge(screenlog, ., by = 'plateno', all.x = FALSE, all.y = TRUE) %>%
+    merge(screenlog, ., by = 'plateno', all.x = FALSE, all.y = TRUE) %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
     tidyr::separate('replica', c('plate_type', 'number'), sep = 1) %>%
     dplyr::mutate(plate = gsub('[A-Z]', '', .$plate)) %>%
@@ -170,7 +170,7 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
     plate.type.converter() %>%
     tidyr::unite('replica', 'replica', 'number', sep = '') %>%
     #dplyr::full_join(lay, .) %>%
-    data.table::merge(lay, ., all = TRUE) %>%
+    merge(lay, ., all = TRUE) %>%
     dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
     dplyr::select(-'extension')
 
