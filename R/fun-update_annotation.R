@@ -1,48 +1,47 @@
 #' update library annotation
 #'
-#' Check all geneIDs in the original library annotation supplied by Dharmacon
-#' against GeneBank and get up-to-date information.
+#' Check all geneIDs in library annotation file against GeneBank and get up-to-date information.
 #'
 #' Since information in data bases can change it is prudent
 #' to refresh the library annotation from time to time.
-#' This function takes every geneID in the original annotation supplied by Dharmacon
-#' and checks its current status in GeneBank: whether is was withdrawn or replcaed
-#' (and if so, by what new geneID), and whether the locus is a pseudogene or not.
+#' This function takes every geneID in an annotation file and checks its current status
+#' in GeneBank: whether is was withdrawn or replcaed (and if so, by what new geneID),
+#' and whether the locus is a pseudogene or not.
 #' Once the geneIDs are updated, a new query is sent to GeneBank to retrieve current
 #' gene symbol, gene description, map location, chromosome number, and aliases
 #' of all geneIDs.
 #'
-#' The outdated information is NOT dropped, it is stored in separate columns,
-#' e.g. the original geneIDs end up in column \code{old_geneid}.
+#' Old geneIDs and gene symbols are kept in separate columsn, e.g. \code{old_geneid}.
+#'
+#' @section File format:
+#' As of version 2.4.0 the function has undergone some generalization.
+#' It now serves not only the original Dharmacon file but also other text files.
+#' The input file may be tab- or comma delimited.
+#' It must contain the following information:
+#' plate number, well/position (e.g. A01), geneID and gene symbol.
+#' All other columns are immaterial but will not be dropped.
+#'
+#' Annotation files can be updated again. In that case the columns \code{old_geneid}
+#' and \code{old_gene_symbol} will remain as is and the update will be run with old geneIDs
+#' rather than the updated ones.
 #'
 #' @section Dependencies:
 #' GeneBank queries are handled with the package \code{reutils}.
-#' Data is loaded with package \code{data.table}.
-#' Data processing is done with \code{tidyverse}.
-#' Four functions are called internally here, see \code{Functions}.
+#' Data is loaded (and saved) with package \code{data.table}.
+#' Data processing is done with the (minimal) use of \code{dplyr} and \code{tidyr}.
+#' Four internal functions are called here, see \code{Functions}.
 #'
 #' @section Processing time:
 #' \code{check_geneid_status}
-#' queries GeneBank one geneID at a time, which may create an appearance
-#' of a DDOS attack if there are too many geneIDs to check.
+#' queries GeneBank one geneID at a time, which may appear
+#' as a DDOS attack if there are too many geneIDs to check.
 #' Hence, a 1 second pause is introduced before every query.
-#'
-#' @section Subsets:
-#' The library consists of three subsets, described in the annotation file as
-#' 'Human Genome', 'Human Drug Targets' and 'Human Druggable Subset',
-#' that consist of 38, 18, and 10 plates, respectively. Plates are numbered
-#' independently within subsets and are renumbered 1 through 66 during the update.
-#'
-#' The update can be limited to a one of those subset or to a specific plate
-#' to save time.
 #'
 #' @param infile file containing the original annotation;
 #'               must be compatible with \code{[data.table]{fread}};
 #'               deafults to internally sotred Dharmacon annotation from 16th May 2015
-#' @param path (optional) path to directory where to save the updated annotation
+#' @param outfile (optional) path to a file to save the updated annotation
 #' @param verbose print function progeress as messages or not
-#' @param plates optional numeric vector to limit the update to a set of plates, see \code{Subsets}
-#' @param part optional library subset to limit the update to, see \code{Subsets}
 #'
 #' @return The function either invisibly returns the updated annotation
 #'         or saves to a specified path and returns nothing.
@@ -50,68 +49,77 @@
 #' @export
 #'
 
-update_annotation <- function(infile, path, verbose = FALSE, plates,
-    part = c('Human Genome', 'Human Drug Targets', 'Human Druggable Subset')) {
-
+update_annotation <- function(infile, outfile, verbose = FALSE) {
   if (!missing(infile) && !file.exists(infile)) stop('"infile" not found')
-  # for subsetting
-  if (!missing(part)) part <- match.arg('part', several.ok = TRUE)
-  if (!missing(plates) && any(plates > 38)) stop('invalid plate selection')
-  if (!missing(plates) && !is.numeric(plates)) stop('"plates" must be a numeric vector')
-  if (missing(plates)) plates <- 1:38
-  plates <- paste('Plate', plates)
+  # check if outfile is valid - but how? if it's the same as infile it could be overwritten...
 
   # load original annotation
   if (verbose) message('loading annotation')
   if (missing(infile)) infile <- 'extdata/ANNOTATION.LIBRARY.GENOMIC_20150416.original.txt'
-  annotation_original <- data.table::fread(file = infile)
+  annotation_original <- data.table::fread(file = infile, check.names = TRUE)
+  # data.table class will cause problems later on
+  annotation_original <- as.data.frame(annotation_original)
 
   # change column names to lower case
   nms <- tolower(names(annotation_original))
 
-  ### provisions for making this function work for any annotation format
-  # define a function
-  replacer <- function(x, string, replacement, error, error2) {
-    ind <- grep(string, x)
-    if (length(ind) == 1) x[ind] <- replacement else
-      if (length(ind) == 0) stop(error, call. = FALSE) else
-        stop(error2, call. = FALSE)
+  # these columns are added during the update
+  # if they are all here already, it means the file was previously updated
+  added_columns <- c('pseudogene', 'withdrawn', 'replaced', 'gene_symbol',
+                     'description', 'map_location', 'chromosome', 'aliases',
+                     'old_gene_symbol', 'old_geneid')
+
+  if (all(is.element(added_columns, nms))) {
+    ## if the file has undergone a previous update
+    # hold on to "old geneids" and "old gene symbols"
+    hold_geneid <- annotation_original$old_geneid
+    hold_gene_symbol <- annotation_original$old_gene_symbol
+    # remove all added variables
+    ind <- !is.element(nms, added_columns)
+    annotation_original <- annotation_original[ind]
+    # restore old geneids and gene symbols
+    annotation_original$geneid <- hold_geneid
+    annotation_original$genesymbol <- hold_gene_symbol
+  } else {
+    ## if this is a new file, the format must be unified
+    # define a function
+    replacer <- function(x, string, replacement, error, error2) {
+      ind <- grep(string, x)
+      if (length(ind) == 1) x[ind] <- replacement else
+        if (length(ind) == 0) stop(error, call. = FALSE) else
+          stop(error2, call. = FALSE)
+      return(x)
+    }
+    # create vectors of regexs, replacements, and error messages
+    strings <- c('^wells?|^positions?', 'gene[-,_,\\., ]?symbols?', 'gene[-,_,\\., ]?ids?')
+    replacements <- c('position', 'genesymbol', 'geneid')
+    errors <- paste('"data" contains no apparent specification of',
+                    c('position', 'gene symbols', 'gene ids'))
+    errors2 <- paste('"data" contains ambiguous specification of',
+                     c('position', 'gene symbols', 'gene ids'))
+    # run the function across the column names
+    for (i in seq_along(strings)) {
+      nms <- replacer(nms, strings[i], replacements[i], errors[i], errors2[i])
+    }
+    # replace column names
+    names(annotation_original) <- nms
+    ### required column names are now present
   }
-  # create vectors of regexs, replacements, and error messages
-  strings <- c('wells?', 'gene[-,_,\\., ]symbols?', 'gene[-,_,\\., ]ids?', 'subsets?')
-  replacements <- c('position', 'genesymbol', 'geneid', 'subset')
-  errors <- paste('"data" contains no apparent specification of',
-                  c('position', 'gene symbols', 'gene ids', 'library subsets'))
-  errors2 <- paste('"data" contains unambiguous specification of',
-                   c('position', 'gene symbols', 'gene ids', 'library subsets'))
-  # run the function across the column names
-  nms <-
-    as.vector(mapply(FUN = replacer,
-                     string = strings, replacement = replacements, error = errors, error2 = errors2,
-                     MoreArgs = list(x = nms), SIMPLIFY = TRUE))
-  # replace column names
-  names(annotation_original) <- nms
-  ### required column names are now present
 
-  # filter subsets
-  ind <- is.element(annotation_original$plate, plates) & is.element(annotation_original$subset, part)
-  annotation_original <- annotation_original[ind, , drop = FALSE]
-  if (nrow(annotation_original) == 0) stop('no plates in the subset')
-
+  # change geneids to character, required for merging later
   annotation_original$geneid <- as.character(annotation_original$geneid)
   # extract original geneIDs
   suppressWarnings({
     geneids <- as.numeric(unique(annotation_original$geneid))
     geneids <- geneids[!is.na(geneids)]
   })
+
   # check geneID status
   if (verbose) message('checking geneID status')
   if (verbose) double_check <- check_geneids(geneids) else
     suppressMessages(double_check <- check_geneids(geneids))
   # add geneID status to annotation and amend geneIDs
-  annotation_checked <-
-    #dplyr::full_join(annotation_original, double_check, by = c('GENEID' = 'geneid'))
-    data.table::merge(annotation_original, double_check, by = 'geneid', all = TRUE)
+  annotation_checked <- merge(annotation_original, double_check, by = 'geneid', all = TRUE)
   annotation_checked$old_geneid <- annotation_checked$geneid
   annotation_checked$geneid <- ifelse(is.na(annotation_checked$new_geneid),
                                       annotation_checked$old_geneid,
@@ -125,30 +133,53 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
   if (verbose) message('getting locus info...')
   fields <- get_gene_fields_batch(geneids)
   # append fields to amended annotation
-  if (verbose) message('appending to annotation')
-  #annotations_joined <- dplyr::full_join(annotation_checked, fields, by = 'geneid')
-  annotations_merged <- data.table::merge(annotation_checked, fields, by = 'geneid')
+  if (verbose) message('appending to annotation...')
+  annotations_merged <- merge(annotation_checked, fields, by = 'geneid')
   # update annotation
-  if (verbose) message('updating annotation')
-  annotation_updated <- #annotations_joined %>%
-    annotations_merged %>%
-    stats::setNames(tolower(names(.))) %>%
-    dplyr::rename('old_gene_symbol' = 'genesymbol',
-                  'duplex_catalog_number' = 'duplexcatalognumber',
-                  'pool_catalog_number' = 'poolcatalognumber',
-                  'gene_accession' = 'geneaccession') %>%
-    dplyr::mutate(plate = rep(1, each = 280 * 4), position = toupper(.$position)) %>%
-    dplyr::group_by('plate', 'position') %>%
-    dplyr::mutate(sequences = paste(.$sequence, collapse = ', '),
-                  duplex_catalog_numbers = paste(.$duplex_catalog_number, collapse = ', ')) %>%
-    dplyr::ungroup() %>%
+  if (verbose) message('updating annotation...')
+  # update names
+  annotation_updated <- annotations_merged
+  nms <- names(annotation_updated)
+  nms[grepl('gene\\.?symbol', nms)] <- 'old_gene_symbol'
+  nms[grepl('duplex.?catalog.?number', nms)] <- 'duplex_catalog_number'
+  nms[grepl('pool.?catalog.?number', nms)] <- 'pool_catalog_number'
+  nms[grepl('gene.?accession', nms)] <- 'gene_accession'
+  names(annotation_updated) <- nms
+  # update "plate" and "position" columns
+  annotation_updated$plate <- as.numeric(gsub('[P,p]late[_,-,\\., ]?', '', annotation_updated$plate))
+  annotation_updated$position <- toupper(annotation_updated$position)
+  # for each plate/position wrap contents of "sequence" into single strings
+  if (is.element('sequence', nms)) {
+    f <- list(annotation_updated$plate, annotation_updated$position)
+    sequences <- tapply(annotation_updated$sequence, f, FUN = paste, collapse = ', ')
+    sequences <- unsplit(sequences, f)
+    annotation_updated$sequences <- sequences
+    ind <- !is.element(nms, 'sequence')
+    annotation_updated <- annotation_updated[ind]
+  }
+  # the same for "duplex_catalog_number"
+  if (is.element('duplex_catalog_number', nms)) {
+    f <- list(annotation_updated$plate, annotation_updated$position)
+    duplex_catalog_numbers <-
+      tapply(annotation_updated$duplex_catalog_number, f, FUN = paste, collapse = ', ')
+    duplex_catalog_numbers <- unsplit(duplex_catalog_numbers, f)
+    annotation_updated$duplex_catalog_numbers <- duplex_catalog_numbers
+    ind <- !is.element(nms, 'duplex_catalog_number')
+    annotation_updated <- annotation_updated[ind]
+  }
+  # clean up duplicated rows, rearrange columns and rows
+  annotation_updated <-
+    annotation_updated %>%
+    dplyr::distinct() %>%
+    dplyr::select(-new_geneid) %>%
     dplyr::select(dplyr::one_of(
       c('plate', 'position', 'geneid', 'ginumber', 'gene_accession', 'gene_symbol',
-        'aliases', 'description', 'map_location', 'chromosome',
-        'sequences', 'duplex_catalog_numbers', 'pool_catalog_number',
-        'withdrawn', 'replaced', 'old_geneid', 'old_gene_symbol'))) %>%
-    dplyr::distinct() %>%
-    dplyr::arrange(.$plate, .$position)
+      'aliases', 'description', 'map_location', 'chromosome', 'pseudogene',
+      'sequences', 'duplex_catalog_numbers', 'pool_catalog_number',
+      'withdrawn', 'replaced', 'old_geneid', 'old_gene_symbol')),
+                  dplyr::everything()) %>%
+    dplyr::arrange(plate, position)
+  # fill in "none"s and "???"s in geneID, gene symbol and description columns
   annotation_updated$gene_symbol <-
     ifelse(annotation_updated$geneid == 'none', 'none', annotation_updated$gene_symbol)
   annotation_updated$gene_symbol <-
@@ -156,20 +187,19 @@ update_annotation <- function(infile, path, verbose = FALSE, plates,
   annotation_updated$description <-
     ifelse(annotation_updated$geneid == 'none', 'none', annotation_updated$description)
   # save or return result
-  if (missing(path)) {
+  if (missing(outfile)) {
     if (verbose) message('finished')
     invisible(annotation_updated)
   } else {
     if (verbose) message('saving file')
-    filename <- paste0(path, '/', 'ANNOTATION.LIBRARY.GENOMIC_', gsub('-', '', Sys.Date()),'.txt')
-    data.table::fwrite(annotation_updated, file = filename, sep = '\t')
+    data.table::fwrite(annotation_updated, file = outfile, sep = '\t')
     if (verbose) message('done!')
   }
 }
 
 #' @describeIn update_annotation
 #' checks a single geneID and returns its pseudogene status (TRUE/FALSE),
-#' withdrawn status (TRUE/FALSE), and a new geneID it his one has been replcaed;
+#' withdrawn status (TRUE/FALSE), and a new geneID if this one has been replcaed;
 #' returns a character vector
 #'
 # #' @param geneID a geneID number, given as a number, character string or factor
@@ -224,7 +254,7 @@ check_geneids <- function(geneIDs) {
 }
 
 #' @describeIn update_annotation
-#' queries the gene data base and retrieves file fields:
+#' queries the gene data base and retrieves five fields:
 #' gene symbol, gene description, map location, chromosome number, and aliases
 #' (other geneIDs associated with the geneID)
 #'
@@ -291,4 +321,28 @@ get_gene_fields_batch <- function(geneIDs) {
     return(do.call(rbind, parts))
   }
 }
+
+
+# ###
+# this is a secrt stash with code left over from unifying annotations
+# library(magrittr)
+# library(data.table)
+# library(dplyr)
+#
+# f <- list.files(path = '../../', pattern = '2019100[8,9]') %>% paste0('../../', .)
+# l <- lapply(f, fread)
+#
+# ch <- function(x) {
+#   if (is.element('geneid', names(x))) x$geneid <- as.character(x$geneid)
+#   if (is.element('ginumber', names(x))) x$ginumber <- as.character(x$ginumber)
+#   if (is.element('old_geneid', names(x))) x$old_geneid <- as.character(x$old_geneid)
+#   if (is.element('chromosome', names(x))) x$chromosome <- as.character(x$chromosome)
+#   return(x)
+# }
+#
+# lc <- lapply(l, ch)
+# L <- do.call(bind_rows, lc)
+# glimpse(L)
+# ###
+
 

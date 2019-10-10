@@ -8,9 +8,7 @@
 \alias{get_gene_fields_batch}
 \title{update library annotation}
 \usage{
-update_annotation(infile, path, verbose = FALSE, plates,
-  part = c("Human Genome", "Human Drug Targets",
-  "Human Druggable Subset"))
+update_annotation(infile, outfile, verbose = FALSE)
 
 check_geneid_status(geneID)
 
@@ -25,45 +23,39 @@ get_gene_fields_batch(geneIDs)
 must be compatible with \code{[data.table]{fread}};
 deafults to internally sotred Dharmacon annotation from 16th May 2015}
 
-\item{path}{(optional) path to directory where to save the updated annotation}
+\item{outfile}{(optional) path to a file to save the updated annotation}
 
 \item{verbose}{print function progeress as messages or not}
-
-\item{plates}{optional numeric vector to limit the update to a set of plates, see \code{Subsets}}
-
-\item{part}{optional library subset to limit the update to, see \code{Subsets}}
 }
 \value{
 The function either invisibly returns the updated annotation
         or saves to a specified path and returns nothing.
 }
 \description{
-Check all geneIDs in the original library annotation supplied by Dharmacon
-against GeneBank and get up-to-date information.
+Check all geneIDs in library annotation file against GeneBank and get up-to-date information.
 }
 \details{
 Since information in data bases can change it is prudent
 to refresh the library annotation from time to time.
-This function takes every geneID in the original annotation supplied by Dharmacon
-and checks its current status in GeneBank: whether is was withdrawn or replcaed
-(and if so, by what new geneID), and whether the locus is a pseudogene or not.
+This function takes every geneID in an annotation file and checks its current status
+in GeneBank: whether is was withdrawn or replcaed (and if so, by what new geneID),
+and whether the locus is a pseudogene or not.
 Once the geneIDs are updated, a new query is sent to GeneBank to retrieve current
 gene symbol, gene description, map location, chromosome number, and aliases
 of all geneIDs.
 
-The outdated information is NOT dropped, it is stored in separate columns,
-e.g. the original geneIDs end up in column \code{old_geneid}.
+Old geneIDs and gene symbols are kept in separate columsn, e.g. \code{old_geneid}.
 }
 \section{Functions}{
 \itemize{
 \item \code{check_geneid_status}: checks a single geneID and returns its pseudogene status (TRUE/FALSE),
-withdrawn status (TRUE/FALSE), and a new geneID it his one has been replcaed;
+withdrawn status (TRUE/FALSE), and a new geneID if this one has been replcaed;
 returns a character vector
 
 \item \code{check_geneids}: runs \code{check_geneid_status} for all geneIDs and returns a \code{data.frame};
 pauses for 1 second before each request to avoid suspicion of DDOS attack
 
-\item \code{get_gene_fields}: queries the gene data base and retrieves file fields:
+\item \code{get_gene_fields}: queries the gene data base and retrieves five fields:
 gene symbol, gene description, map location, chromosome number, and aliases
 (other geneIDs associated with the geneID)
 
@@ -71,31 +63,34 @@ gene symbol, gene description, map location, chromosome number, and aliases
 the results of \code{reutils::efetch} are unworkable for larger sets
 }}
 
+\section{File format}{
+
+As of version 2.4.0 the function has undergone some generalization.
+It now serves not only the original Dharmacon file but also other text files.
+The input file may be tab- or comma delimited.
+It must contain the following information:
+plate number, well/position (e.g. A01), geneID and gene symbol.
+All other columns are immaterial but will not be dropped.
+
+Annotation files can be updated again. In that case the columns \code{old_geneid}
+and \code{old_gene_symbol} will remain as is and the update will be run with old geneIDs
+rather than the updated ones.
+}
+
 \section{Dependencies}{
 
 GeneBank queries are handled with the package \code{reutils}.
-Data is loaded with package \code{data.table}.
-Data processing is done with \code{tidyverse}.
-Four functions are called internally here, see \code{Functions}.
+Data is loaded (and saved) with package \code{data.table}.
+Data processing is done with the (minimal) use of \code{dplyr} and \code{tidyr}.
+Four internal functions are called here, see \code{Functions}.
 }
 
 \section{Processing time}{
 
 \code{check_geneid_status}
-queries GeneBank one geneID at a time, which may create an appearance
-of a DDOS attack if there are too many geneIDs to check.
+queries GeneBank one geneID at a time, which may appear
+as a DDOS attack if there are too many geneIDs to check.
 Hence, a 1 second pause is introduced before every query.
-}
-
-\section{Subsets}{
-
-The library consists of three subsets, described in the annotation file as
-'Human Genome', 'Human Drug Targets' and 'Human Druggable Subset',
-that consist of 38, 18, and 10 plates, respectively. Plates are numbered
-independently within subsets and are renumbered 1 through 66 during the update.
-
-The update can be limited to a one of those subset or to a specific plate
-to save time.
 }
 
 \keyword{internal}
