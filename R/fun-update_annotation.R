@@ -5,11 +5,11 @@
 #' Since information in data bases can change it is prudent
 #' to refresh the library annotation from time to time.
 #' This function takes every geneID in an annotation file and checks its current status
-#' in GeneBank: whether is was withdrawn or replcaed (and if so, by what new geneID),
-#' and whether the locus is a pseudogene or not.
-#' Once the geneIDs are updated, a new query is sent to GeneBank to retrieve current
-#' gene symbol, gene description, map location, chromosome number, and aliases
-#' of all geneIDs.
+#' in GeneBank: whether is was withdrawn or replaced (and if so, by what new geneID)
+#' Once the geneIDs are updated, two new queries are sent to GeneBank.
+#' The first retrieves the current gene symbol, gene description, map location,
+#' chromosome number, and aliases of all geneIDs.
+#' The other query retrieves the gene type (protein-coding, pseudogene, etc.).
 #'
 #' Old geneIDs and gene symbols are kept in separate columsn, e.g. \code{old_geneid}.
 #'
@@ -65,7 +65,7 @@ update_annotation <- function(infile, outfile, verbose = FALSE) {
 
   # these columns are added during the update
   # if they are all here already, it means the file was previously updated
-  added_columns <- c('pseudogene', 'withdrawn', 'replaced', 'gene_symbol',
+  added_columns <- c('gene_type', 'withdrawn', 'replaced', 'gene_symbol',
                      'description', 'map_location', 'chromosome', 'aliases',
                      'old_gene_symbol', 'old_geneid')
 
@@ -168,17 +168,17 @@ update_annotation <- function(infile, outfile, verbose = FALSE) {
     annotation_updated <- annotation_updated[ind]
   }
   # clean up duplicated rows, rearrange columns and rows
-  annotation_updated <-
-    annotation_updated %>%
-    dplyr::distinct() %>%
-    dplyr::select(-new_geneid) %>%
-    dplyr::select(dplyr::one_of(
-      c('plate', 'position', 'geneid', 'ginumber', 'gene_accession', 'gene_symbol',
-      'aliases', 'description', 'map_location', 'chromosome', 'pseudogene',
+  annotation_updated <- annotation_updated[-which(names(annotation_updated) == 'new_geneid')]
+  annotation_updated <- dplyr::select(annotation_updated, dplyr::one_of(
+    c('plate', 'position', 'geneid', 'ginumber', 'gene_accession', 'gene_symbol',
+      'aliases', 'description', 'map_location', 'chromosome', 'gene_type',
       'sequences', 'duplex_catalog_numbers', 'pool_catalog_number',
       'withdrawn', 'replaced', 'old_geneid', 'old_gene_symbol')),
-                  dplyr::everything()) %>%
-    dplyr::arrange(plate, position)
+    dplyr::everything())
+  annotation_updated <- annotation_updated[!duplicated(annotation_updated), ]
+  annotation_updated <- annotation_updated[order(annotation_updated$plate, annotation_updated$position), ]
+  rownames(annotation_updated) <- 1:nrow(annotation_updated)
+
   # fill in "none"s and "???"s in geneID, gene symbol and description columns
   annotation_updated$gene_symbol <-
     ifelse(annotation_updated$geneid == 'none', 'none', annotation_updated$gene_symbol)
@@ -198,38 +198,33 @@ update_annotation <- function(infile, outfile, verbose = FALSE) {
 }
 
 #' @describeIn update_annotation
-#' checks a single geneID and returns its pseudogene status (TRUE/FALSE),
-#' withdrawn status (TRUE/FALSE), and a new geneID if this one has been replcaed;
+#' checks a single geneID and returns its gene type (protein-coding, pseudo, etc.),
+#' withdrawn and replaced status (TRUE/FALSE), and a potential new geneID;
 #' returns a character vector
-#'
-# #' @param geneID a geneID number, given as a number, character string or factor
 #'
 #' @keywords internal
 #'
+
 check_geneid_status <- function(geneID) {
   if (length(geneID) != 1L) stop('"geneID" must be of length 1')
-  efetch_object <- reutils::efetch(geneID, db = 'gene', 'gene_table')
-  efetch_object_as_text <- reutils::content(efetch_object, as = 'text')
-  result <-
-    c(geneid = as.character(geneID),
-      pseudogene = as.character(any(grepl('pseudogene', efetch_object_as_text))),
-      withdrawn = as.character(any(grepl('withdrawn', efetch_object_as_text))),
-      replaced =
-        if (any(grepl('replaced', efetch_object_as_text))) {
-          grep('replaced', unlist(strsplit(efetch_object_as_text, split = '\n')), value = TRUE)
-        } else NA_character_)
-  return(result)
+  efetch_object <- reutils::efetch(geneID, db = 'gene', rettype = 'gene_table')
+  efetch_text <- reutils::content(efetch_object, as = 'text')
+  withdrawn <- as.character(grepl('withdrawn', efetch_text))
+  replaced <-
+    if (grepl('replaced', efetch_text)) {
+      grep('replaced', unlist(strsplit(efetch_text, split = '\n')), value = TRUE)
+      } else NA_character_
+  return(c(geneid = as.character(geneID), withdrawn = withdrawn, replaced = replaced))
 }
 
 #' @describeIn update_annotation
 #' runs \code{check_geneid_status} for all geneIDs and returns a \code{data.frame};
 #' pauses for 1 second before each request to avoid suspicion of DDOS attack
 #'
-# #' @param geneIDs vector of geneIDs, numeric, character or factor
-#'
 #' @keywords internal
 #'
 check_geneids <- function(geneIDs) {
+  # define function that counts iterations
   how_to_count <- function() {
     X <- length(geneIDs)
     iteration <- 1
@@ -239,58 +234,73 @@ check_geneids <- function(geneIDs) {
     }
   }
   count <- how_to_count()
+  # define checkingcounting function operator for checking geneid status
   check_geneid_status_with_pause <- function(x) {
     count()
     Sys.sleep(1)
     check_geneid_status(x)
   }
-  a <- vapply(geneIDs, check_geneid_status_with_pause, character(4)) %>%
-    t %>% data.frame(stringsAsFactors = FALSE) %>%
-    dplyr::mutate_at(2:3, as.logical) %>%
-    tidyr::separate('replaced', c('replaced', 'new_geneid'), sep = 'ID: ')
-  a$replaced <- ifelse(is.na(a$replaced), FALSE, TRUE)
-  a$new_geneid <- as.numeric(a$new_geneid)
-  return(a)
+  m <- vapply(geneIDs, check_geneid_status_with_pause, character(3))
+  d <- as.data.frame(t(m), stringsAsFactors = FALSE)
+  d$withdrawn <- as.logical(d$withdrawn)
+  d <- tidyr::separate(d, 'replaced', c('replaced', 'new_geneid'), sep = 'ID: ')
+  d$replaced <- ifelse(is.na(d$replaced), FALSE, TRUE)
+  d$new_geneid <- as.numeric(d$new_geneid)
+  return(d)
 }
 
 #' @describeIn update_annotation
-#' queries the gene data base and retrieves five fields:
+#' queries the gene data base twice;
+#' first retrieves five fields:
 #' gene symbol, gene description, map location, chromosome number, and aliases
-#' (other geneIDs associated with the geneID)
-#'
-# #' @param geneIDs vector of geneIDs, numeric, character or factor
+#' (other geneIDs associated with the geneID);
+#' then retrieves gene type
 #'
 #' @keywords internal
 #'
 get_gene_fields <- function(geneIDs) {
+  # get gene symbol, aliases, description, map location and chromosome
   e_object <- reutils::efetch(geneIDs, db = 'gene', rettype = 'docsum', retmode = 'text')
   e_object_as_text <- reutils::content(e_object, as = 'text')
   split_text <- strsplit(e_object_as_text, split='<[/]?Name>')[[1]]
   gene_symbol <- split_text[seq(from = 2, to = length(split_text), by = 2)]
+  split_text <- strsplit(e_object_as_text, split='<[/]?OtherAliases>')[[1]]
+  aliases <- split_text[seq(from = 2, to = length(split_text), by = 2)]
   split_text <- strsplit(e_object_as_text, split='<[/]?Description>')[[1]]
   description <- split_text[seq(from = 2, to = length(split_text), by = 2)]
   split_text <- strsplit(e_object_as_text, split='<[/]?MapLocation>')[[1]]
   map_location <- split_text[seq(from = 2, to = length(split_text), by = 2)]
   split_text <- strsplit(e_object_as_text, split='<[/]?Chromosome>')[[1]]
   chromosome <- split_text[seq(from = 2, to = length(split_text), by = 2)]
-  split_text <- strsplit(e_object_as_text, split='<[/]?OtherAliases>')[[1]]
-  aliases <- split_text[seq(from = 2, to = length(split_text), by = 2)]
+  # an unexpected pause happens here; an intentional pause seems to alleviate it
+  Sys.sleep(1)
+  # get gene type
+  efetch_object <- reutils::efetch(geneIDs, db = 'gene')
+  efetch_text <- reutils::content(efetch_object, as = 'text')
+  efetch_text_split <- strsplit(efetch_text, '\n')[[1]]
+  gene_type_fields <- grep('gene_type', efetch_text_split, value = TRUE)
+  gene_type_fields_split <- strsplit(gene_type_fields, '\"')
+  ef <- function(x) {
+    tryCatch(x[2], error = function(e) return('unknown gene type'))
+    if (is.na(x[2])) return('unknown gene type') else return(x[2])
+  }
+  gene_type <- vapply(gene_type_fields_split, ef, character(1))
+
   return(
     data.frame(
-      geneid = as.character(geneIDs), gene_symbol, description, map_location, chromosome, aliases,
+      geneid = as.character(geneIDs), gene_symbol, aliases, description, map_location, chromosome,
+      gene_type,
       stringsAsFactors = F))
 }
 
 #' @describeIn update_annotation
-#' run \code{get_gene_fields} in batches of 499 and less; this is necessary as
+#' runs \code{get_gene_fields} in batches of 499 and less; this is necessary as
 #' the results of \code{reutils::efetch} are unworkable for larger sets
-#'
-# #' @param geneIDs vector of geneIDs, numeric, character or factor
 #'
 #' @keywords internal
 #'
 get_gene_fields_batch <- function(geneIDs) {
-  # we shall be calling efetch, which can only be done for less than 500 geneIDs at aa time
+  # we shall be calling efetch, which can only be done for less than 500 geneIDs at a time
   # test how many items there are
   howmany <- length(geneIDs)
   # if there area less that 500 items, a single call suffices
@@ -344,5 +354,3 @@ get_gene_fields_batch <- function(geneIDs) {
 # L <- do.call(bind_rows, lc)
 # glimpse(L)
 # ###
-
-

@@ -1,6 +1,6 @@
 Package: siscreenr
 Title: Analyze Genome-Wide siRNA Screening Campaigns
-Version: 2.4.0
+Version: 2.5.0
 Authors@R: 
     person(given = "Aleksander",
            family = "Chlebowski",
@@ -8,7 +8,7 @@ Authors@R:
            email = "olobiolo@gmail.com")
 Maintainer: <olobiolo@gmail.com>
 Description: Data analysis tools for screening campaigns with a
-    microscopic readout.  Created to work with a genome-wide siRNA library
+    microscopic readout. Created to work with a genome-wide siRNA library
     and a ScanR imaging system, hence some idiosyncracies. Hopefully will
     be applicable to other setups as well.
 License: GPL-3

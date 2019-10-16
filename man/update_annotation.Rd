@@ -38,28 +38,30 @@ Check all geneIDs in library annotation file against GeneBank and get up-to-date
 Since information in data bases can change it is prudent
 to refresh the library annotation from time to time.
 This function takes every geneID in an annotation file and checks its current status
-in GeneBank: whether is was withdrawn or replcaed (and if so, by what new geneID),
-and whether the locus is a pseudogene or not.
-Once the geneIDs are updated, a new query is sent to GeneBank to retrieve current
-gene symbol, gene description, map location, chromosome number, and aliases
-of all geneIDs.
+in GeneBank: whether is was withdrawn or replaced (and if so, by what new geneID)
+Once the geneIDs are updated, two new queries are sent to GeneBank.
+The first retrieves the current gene symbol, gene description, map location,
+chromosome number, and aliases of all geneIDs.
+The other query retrieves the gene type (protein-coding, pseudogene, etc.).
 
 Old geneIDs and gene symbols are kept in separate columsn, e.g. \code{old_geneid}.
 }
 \section{Functions}{
 \itemize{
-\item \code{check_geneid_status}: checks a single geneID and returns its pseudogene status (TRUE/FALSE),
-withdrawn status (TRUE/FALSE), and a new geneID if this one has been replcaed;
+\item \code{check_geneid_status}: checks a single geneID and returns its gene type (protein-coding, pseudo, etc.),
+withdrawn and replaced status (TRUE/FALSE), and a potential new geneID;
 returns a character vector
 
 \item \code{check_geneids}: runs \code{check_geneid_status} for all geneIDs and returns a \code{data.frame};
 pauses for 1 second before each request to avoid suspicion of DDOS attack
 
-\item \code{get_gene_fields}: queries the gene data base and retrieves five fields:
+\item \code{get_gene_fields}: queries the gene data base twice;
+first retrieves five fields:
 gene symbol, gene description, map location, chromosome number, and aliases
-(other geneIDs associated with the geneID)
+(other geneIDs associated with the geneID);
+then retrieves gene type
 
-\item \code{get_gene_fields_batch}: run \code{get_gene_fields} in batches of 499 and less; this is necessary as
+\item \code{get_gene_fields_batch}: runs \code{get_gene_fields} in batches of 499 and less; this is necessary as
 the results of \code{reutils::efetch} are unworkable for larger sets
 }}
 
