@@ -43,7 +43,7 @@ drawmeabarplot <- function(data, highlight, treshold = 2) {
       paste(HIGHLIGHT, 'complex genes')
     }
   # produce plot
-  ggplot2::ggplot(data, ggplot2::aes(x = ID, y = mean_zscore_gf)) +
+  ggplot2::ggplot(data, ggplot2::aes_string(x = 'ID', y = 'mean_zscore_gf')) +
     ggplot2::theme_classic() +
     ggplot2::theme(axis.text.x = ggplot2::element_blank(),
                    axis.ticks.x = ggplot2::element_blank(),
