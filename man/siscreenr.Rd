@@ -18,6 +18,7 @@ However, it is compatible with other plate formats and some concepts can be tran
 }
 \section{Functions}{
 
+Data analysis:
 \itemize{
   \item{
   \code{build_screen} collate all data into a single data frame, reaarrange and add layout
@@ -32,12 +33,52 @@ However, it is compatible with other plate formats and some concepts can be tran
   \item{
   \code{hitscore} classify data point as hit or not based on a given treshold; usually used on z scores
   }
-  \item{
-  \code{sumscore} calculate summary hit score and assign hit status to data point
-  }
-  \item{
-  \code{fracscore} calculate fractional hit score and assign hit status to data point
-  }
+}
+
+Data formatting:
+\itemize{
+ \item{
+ \code{clean_column_names} clean up superfluous characters from column names
+ }
+ \item{
+ \code{insert_zeros} inset zeros to elements of a character vector (e.g. well positions)
+ }
+ \item{
+ \code{separate_flag} change character note on a plate into a logical flag on single wells
+ }
+}
+
+File preparation:
+\itemize{
+ \item{
+ \code{layouts} prepare layout file from components
+ }
+ \item{
+ \code{update_annotation} update library annotation
+ }
+}
+
+Visualization:
+\itemize{
+ \item{
+ \code{plot_screen_progress} create a plot of material accummulation/processing over time
+ }
+ \item{
+ \code{drawmeabarplot} plot mean green fraction z scores and highlight desired genes
+ }
+ \item{
+ \code{color_sections} prepare plotting space for \code{highlight_genes}
+ }
+ \item{
+ \code{highlight_genes} draw scatterplot of entire screen and highlight desired genes
+ }
+}
+
+Miscellaneous:
+\itemize{
+ \item{
+ \code{plate.type.converter} internal function that translates plate type codes
+ }
 }
 }
 

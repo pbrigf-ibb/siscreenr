@@ -77,16 +77,18 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
       stop ('"rem.col" must be either a numeric or a character vector')
     }
   }
+
   # load log and layout and compare logged vs filed plates
   if (verbose) cat('tallying plates... \n')
   screenlog <- utils::read.delim(logfile, stringsAsFactors = FALSE)
-
   plates.logged <- screenlog[, 1]
   if (length(plates.logged) == 0) stop('no plates logged(?); check screen log file')
   data.files <- list.files(path = datadir)
-  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_')[[1]][1])
-
+  plates.filed <- sapply(data.files, function(x) strsplit(x, split = '_?\\.txt')[[1]][1])
   if (length(plates.filed) == 0) stop('no result files')
+  # load a random file to test "wells" argument
+  test_file <- utils::read.delim(sample(list.files(datadir, full.names = TRUE), 1), stringsAsFactors = FALSE)
+  if (!is.element(wells, names(test_file))) stop('column "', wells, '" not found; check "wells" argument')
   if (verbose) {
     cat(length(plates.filed), 'result files found: \n')
     print(cbind(sort(as.vector(plates.filed))))
@@ -158,19 +160,18 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
   }
 
   # read and reformat additional information
+  names(scr)[which(names(scr) == wells)] <- 'well'
+  scr <- tidyr::separate(scr, 'filename', c('plateno','extension'), sep = '_')
+  scr <- merge(screenlog, scr, by = 'plateno', all.x = FALSE, all.y = TRUE)
   scr <- scr %>%
-    dplyr::rename('well' = wells) %>% # rename well id column
-    tidyr::separate('filename', c('plateno','extension'), sep = '_') %>%
-    dplyr::right_join(screenlog, .,  by = 'plateno') %>%
     tidyr::separate('plateno', c('plate', 'prepared', 'screen', 'replica'), sep = '\\.') %>%
-    tidyr::separate('replica', c('plate_type', 'number'), sep = 1) %>%
-    dplyr::mutate(plate = gsub('[A-Z]', '', .$plate)) %>%
-    dplyr::mutate(plate = as.numeric(.$plate)) %>%
-    plate.type.converter() %>%
-    tidyr::unite('replica', 'replica', 'number', sep = '') %>%
-    dplyr::full_join(lay, .) %>%
-    dplyr::mutate_at(dplyr::vars(c('plated', 'prepared', 'imaged')), lubridate::ymd) %>%
-    dplyr::select(-'extension')
+    tidyr::separate('replica', c('plate_type', 'number'), sep = 1)
+  scr$plate <- as.numeric(gsub('[A-Z]', '', scr$plate))
+  scr <- plate.type.converter(scr)
+  scr <- tidyr::unite(scr, 'replica', 'replica', 'number', sep = '')
+  scr <- merge(lay, scr, all = TRUE)
+  scr[c('plated', 'prepared', 'imaged')] <- lapply(scr[c('plated', 'prepared', 'imaged')], lubridate::ymd)
+  scr$extension <- NULL
 
   # change zeros to NAs if required
   if (zero.to.NA) {
@@ -188,9 +189,8 @@ build_screen <- function(logfile, layout, datadir = './data/', rem.col,
 
   # reorder by plate number, replica number and well number
   if (verbose) cat('reordering... \n')
-  scr <- scr %>% dplyr::arrange(.$plate, .$replica, .$plated, .$imaged, .$column, .$row)
+  scr <- scr[order(scr$plate, scr$replica, scr$plated, scr$imaged, scr$column, scr$row), ]
 
   if (verbose) cat('\nready! \n')
   invisible(scr)
 }
-

@@ -61,13 +61,14 @@ separate_flag <- function(scr, flag = 'wells_rescanned', newname,
   C <- mapply(is.element, A, B)
   # replace original column in scr
   scr[[flag]] <- C
-  # change column name if required
-  if (!missing(newnwame)) {
+
+  # change column name if required or return
+  if (missing(newname)) return(scr) else {
     if (!is.character(newname) || length(newname) != 1) {
       stop('"newname" must be a character string')
     }
-      ind <- which(colnames(scr) == flag)
-      colnames(scr)[ind] <- newname
+    ind <- which(colnames(scr) == flag)
+    colnames(scr)[ind] <- newname
+    return(scr)
   }
-  return(scr)
 }
